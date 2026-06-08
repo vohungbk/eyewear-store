@@ -9,7 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -273,8 +273,8 @@ export interface Database {
         };
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
     Enums: {
       user_role: "customer" | "admin";
       order_status:
@@ -285,8 +285,9 @@ export interface Database {
         | "delivered"
         | "cancelled";
     };
+    CompositeTypes: { [_ in never]: never };
   };
-}
+};
 
 // Convenience row types
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];

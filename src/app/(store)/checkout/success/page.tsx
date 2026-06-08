@@ -1,0 +1,117 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+import { stripe } from "@/lib/stripe";
+import CartClearer from "@/components/checkout/CartClearer";
+import { formatPrice } from "@/lib/utils/format";
+
+export const metadata: Metadata = { title: "Order Confirmed" };
+
+interface Props {
+  searchParams: Promise<{
+    payment_intent?: string;
+    redirect_status?: string;
+  }>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serviceClient(): any {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
+export default async function CheckoutSuccessPage({ searchParams }: Props) {
+  const { payment_intent, redirect_status } = await searchParams;
+
+  if (!payment_intent || redirect_status !== "succeeded") {
+    redirect("/checkout");
+  }
+
+  // Verify payment intent server-side
+  const pi = await stripe.paymentIntents.retrieve(payment_intent);
+  if (pi.status !== "succeeded") {
+    redirect("/checkout");
+  }
+
+  const db = serviceClient();
+  const { data: orderData } = await db
+    .from("orders")
+    .select("id, total, customer_name, status")
+    .eq("stripe_payment_intent_id", payment_intent)
+    .single();
+  const order = orderData as {
+    id: string;
+    total: number;
+    customer_name: string;
+    status: string;
+  } | null;
+
+  return (
+    <div className="mx-auto max-w-lg px-4 sm:px-6 py-16 text-center">
+      {/* Clears Zustand cart on mount */}
+      <CartClearer />
+
+      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg
+          className="w-8 h-8 text-green-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+
+      <h1 className="text-2xl font-bold mb-2">Order Confirmed!</h1>
+      <p className="text-neutral-500 mb-8">
+        Thanks for your purchase. We&apos;ve received your order and will
+        process it shortly.
+      </p>
+
+      {order && (
+        <div className="border border-neutral-200 rounded-lg p-5 mb-8 text-left space-y-3">
+          <div>
+            <p className="text-xs text-neutral-500 mb-0.5">Order number</p>
+            <p className="font-mono font-semibold">
+              #{order.id.slice(0, 8).toUpperCase()}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-500 mb-0.5">Total</p>
+            <p className="font-semibold">{formatPrice(order.total)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-500 mb-0.5">Shipping to</p>
+            <p className="text-sm">{order.customer_name}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        {order && (
+          <Link
+            href={`/account/orders/${order.id}`}
+            className="px-6 py-2.5 bg-black text-white text-sm font-semibold rounded-lg hover:bg-neutral-800 transition-colors"
+          >
+            View Order
+          </Link>
+        )}
+        <Link
+          href="/products"
+          className="px-6 py-2.5 border border-neutral-200 text-sm font-semibold rounded-lg hover:border-black transition-colors"
+        >
+          Continue Shopping
+        </Link>
+      </div>
+    </div>
+  );
+}
