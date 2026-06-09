@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { sendCAPIEvent } from "@/lib/facebook/capi";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -53,40 +54,75 @@ export async function POST(request: Request) {
           .eq("id", orderId)
           .eq("stripe_payment_intent_id", pi.id);
 
-        if (fbEventId) {
-          const { data: order } = await db
-            .from("orders")
-            .select("customer_email, customer_name, shipping_address, total, order_items(product_id, quantity)")
-            .eq("id", orderId)
-            .single();
+        // Fetch full order once — used for both CAPI and confirmation email
+        const { data: order } = await db
+          .from("orders")
+          .select(`
+            id, customer_email, customer_name, shipping_address,
+            subtotal, shipping, tax, total,
+            order_items(product_id, unit_price, quantity, product_snapshot)
+          `)
+          .eq("id", orderId)
+          .single();
 
-          if (order) {
-            const addr = order.shipping_address as Record<string, string> | null;
-            const nameParts = (order.customer_name as string ?? "").split(" ");
-            const items = (order.order_items ?? []) as { product_id: string; quantity: number }[];
+        if (order) {
+          type RawItem = { product_id: string; unit_price: number; quantity: number; product_snapshot: { name: string; variant_name?: string; image_url?: string } | null };
+          const addr = order.shipping_address as Record<string, string> | null;
+          const nameParts = (order.customer_name as string ?? "").split(" ");
+          const items = (order.order_items ?? []) as RawItem[];
 
-            await sendCAPIEvent({
-              eventName: "Purchase",
-              eventId: fbEventId,
-              userData: {
-                email: order.customer_email ?? undefined,
-                firstName: nameParts[0],
-                lastName: nameParts.slice(1).join(" ") || undefined,
-                city: addr?.city,
-                state: addr?.state,
-                zip: addr?.postal_code,
-                country: addr?.country,
-              },
-              customData: {
-                value: order.total,
-                currency: "USD",
-                contentIds: items.map((i) => i.product_id),
-                contentType: "product",
-                numItems: items.reduce((s, i) => s + i.quantity, 0),
-                orderId,
-              },
-            });
-          }
+          await Promise.all([
+            // Facebook CAPI Purchase
+            fbEventId
+              ? sendCAPIEvent({
+                  eventName: "Purchase",
+                  eventId: fbEventId,
+                  userData: {
+                    email: order.customer_email ?? undefined,
+                    firstName: nameParts[0],
+                    lastName: nameParts.slice(1).join(" ") || undefined,
+                    city: addr?.city,
+                    state: addr?.state,
+                    zip: addr?.postal_code,
+                    country: addr?.country,
+                  },
+                  customData: {
+                    value: order.total,
+                    currency: "USD",
+                    contentIds: items.map((i) => i.product_id),
+                    contentType: "product",
+                    numItems: items.reduce((s, i) => s + i.quantity, 0),
+                    orderId,
+                  },
+                })
+              : Promise.resolve(),
+
+            // Order confirmation email
+            order.customer_email
+              ? sendOrderConfirmationEmail({
+                  id: order.id,
+                  customer_name: order.customer_name ?? "",
+                  customer_email: order.customer_email,
+                  subtotal: order.subtotal,
+                  shipping: order.shipping,
+                  tax: order.tax,
+                  total: order.total,
+                  shipping_address: addr as {
+                    line1: string;
+                    line2?: string;
+                    city: string;
+                    state: string;
+                    postal_code: string;
+                    country: string;
+                  },
+                  order_items: items.map((i) => ({
+                    product_snapshot: i.product_snapshot,
+                    unit_price: i.unit_price,
+                    quantity: i.quantity,
+                  })),
+                })
+              : Promise.resolve(),
+          ]);
         }
       }
       break;
