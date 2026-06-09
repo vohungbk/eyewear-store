@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { stripe } from "@/lib/stripe";
 import CartClearer from "@/components/checkout/CartClearer";
+import PurchaseTracker from "@/components/analytics/PurchaseTracker";
 import { formatPrice } from "@/lib/utils/format";
 
 export const metadata: Metadata = { title: "Order Confirmed" };
@@ -36,10 +37,12 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
     redirect("/checkout");
   }
 
+  const fbEventId = (pi.metadata?.fb_event_id as string) ?? "";
+
   const db = serviceClient();
   const { data: orderData } = await db
     .from("orders")
-    .select("id, total, customer_name, status")
+    .select("id, total, customer_name, status, order_items(product_id, quantity)")
     .eq("stripe_payment_intent_id", payment_intent)
     .single();
   const order = orderData as {
@@ -47,12 +50,21 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
     total: number;
     customer_name: string;
     status: string;
+    order_items: { product_id: string; quantity: number }[];
   } | null;
 
   return (
     <div className="mx-auto max-w-lg px-4 sm:px-6 py-16 text-center">
-      {/* Clears Zustand cart on mount */}
       <CartClearer />
+      {order && fbEventId && (
+        <PurchaseTracker
+          value={order.total}
+          orderId={order.id}
+          eventId={fbEventId}
+          numItems={order.order_items.reduce((s, i) => s + i.quantity, 0)}
+          contentIds={order.order_items.map((i) => i.product_id)}
+        />
+      )}
 
       <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
         <svg

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getProducts } from "@/lib/data/products";
 import ProductCard from "@/components/ui/ProductCard";
+import SearchTracker from "@/components/analytics/SearchTracker";
 
 export const metadata: Metadata = {
   title: "Search",
@@ -26,6 +27,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      {query && <SearchTracker query={query} />}
       {/* Search form */}
       <form method="get" action="/search" className="mb-8">
         <div className="relative max-w-xl">

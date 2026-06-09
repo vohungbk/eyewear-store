@@ -4,6 +4,7 @@ import { getProduct, getRelatedProducts } from "@/lib/data/products";
 import ProductGallery from "@/components/ui/ProductGallery";
 import ProductDetail from "@/components/ui/ProductDetail";
 import ProductCard from "@/components/ui/ProductCard";
+import ViewContentTracker from "@/components/analytics/ViewContentTracker";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -46,8 +47,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
     slug: string;
   } | null;
 
+  const basePrice = product.product_variants?.[0]?.price ?? 0;
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <ViewContentTracker productId={product.id} name={product.name} price={basePrice} />
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-neutral-500 mb-6">
         <a href="/" className="hover:text-black transition-colors">Home</a>

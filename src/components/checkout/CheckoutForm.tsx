@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -12,6 +12,7 @@ import {
 import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/lib/utils/format";
 import type { CartItem } from "@/types/cart";
+import { initiateCheckout } from "@/lib/facebook/pixel";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -260,6 +261,7 @@ export default function CheckoutForm({
 
   const [hydrated, setHydrated] = useState(false);
   const [step, setStep] = useState<"details" | "payment">("details");
+  const checkoutTracked = useRef(false);
   const [clientSecret, setClientSecret] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -280,6 +282,16 @@ export default function CheckoutForm({
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || checkoutTracked.current || items.length === 0) return;
+    checkoutTracked.current = true;
+    initiateCheckout({
+      value: calcTotals(items).total,
+      numItems: items.reduce((s, i) => s + i.quantity, 0),
+      contentIds: items.map((i) => i.productId),
+    });
+  }, [hydrated, items]);
 
   useEffect(() => {
     if (hydrated && items.length === 0) {

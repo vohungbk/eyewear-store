@@ -42,6 +42,9 @@ export async function POST(request: Request) {
       data: { user },
     } = await authClient.auth.getUser();
 
+    // Generate event ID for Facebook Purchase deduplication (browser Pixel vs CAPI)
+    const fbEventId = crypto.randomUUID();
+
     // Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totals.total * 100),
@@ -91,15 +94,16 @@ export async function POST(request: Request) {
 
     if (itemsError) throw itemsError;
 
-    // Attach order_id to payment intent metadata for webhook lookup
+    // Attach order_id + fb_event_id to metadata for webhook + success page
     await stripe.paymentIntents.update(paymentIntent.id, {
-      metadata: { order_id: order.id },
+      metadata: { order_id: order.id, fb_event_id: fbEventId },
     });
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       orderId: order.id,
+      fbEventId,
     });
   } catch (err) {
     console.error("[create-payment-intent]", err);

@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartStore, CartItem } from "@/types/cart";
+import { addToCart as pixelAddToCart } from "@/lib/facebook/pixel";
 
 export const useCartStore = create<CartStore>()(
   persist(
@@ -28,6 +29,12 @@ export const useCartStore = create<CartStore>()(
         } else {
           set({ items: [...items, { ...newItem, quantity: 1 }] });
         }
+        pixelAddToCart({
+          productId: newItem.productId,
+          name: newItem.name,
+          price: newItem.price,
+          quantity: 1,
+        });
       },
 
       removeItem: (variantId) =>
