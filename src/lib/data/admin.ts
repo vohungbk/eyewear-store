@@ -91,6 +91,23 @@ export async function getDashboardStats() {
   };
 }
 
+export async function getAdminCategories() {
+  const { data } = await db()
+    .from("categories")
+    .select("id, name, slug, description, image_url, parent_id, position, created_at")
+    .order("position", { ascending: true });
+  return (data ?? []) as AdminCategory[];
+}
+
+export async function getAdminCategory(id: string) {
+  const { data } = await db()
+    .from("categories")
+    .select("id, name, slug, description, image_url, parent_id, position")
+    .eq("id", id)
+    .single();
+  return data as AdminCategory | null;
+}
+
 // ─── Local types ─────────────────────────────────────────────────────────────
 
 export interface AdminProduct {
@@ -143,6 +160,17 @@ export interface AdminOrder {
   total: number;
   status: string;
   created_at: string;
+}
+
+export interface AdminCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  image_url: string | null;
+  parent_id: string | null;
+  position: number;
+  created_at?: string;
 }
 
 export interface AdminOrderDetail {

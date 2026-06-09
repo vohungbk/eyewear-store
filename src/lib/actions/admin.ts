@@ -4,7 +4,7 @@ import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { ProductSchema, type ProductFormValues } from "@/lib/validations/admin";
+import { ProductSchema, type ProductFormValues, CategorySchema, type CategoryFormValues } from "@/lib/validations/admin";
 import type { FormState } from "@/lib/validations/auth";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -219,6 +219,92 @@ export async function saveProductImage(
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+export async function createCategory(
+  data: CategoryFormValues
+): Promise<FormState> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { success: false, message: "Not authorized." };
+  }
+
+  const parsed = CategorySchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const db = serviceDb();
+  const { error } = await db.from("categories").insert(parsed.data);
+
+  if (error) {
+    if (error.code === "23505") {
+      return { success: false, message: "A category with this slug already exists." };
+    }
+    return { success: false, message: "Failed to create category." };
+  }
+
+  revalidateTag("categories");
+  revalidatePath("/admin/categories");
+  redirect("/admin/categories");
+}
+
+export async function updateCategory(
+  id: string,
+  data: CategoryFormValues
+): Promise<FormState> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { success: false, message: "Not authorized." };
+  }
+
+  const parsed = CategorySchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const db = serviceDb();
+  const { error } = await db
+    .from("categories")
+    .update(parsed.data)
+    .eq("id", id);
+
+  if (error) {
+    if (error.code === "23505") {
+      return { success: false, message: "A category with this slug already exists." };
+    }
+    return { success: false, message: "Failed to update category." };
+  }
+
+  revalidateTag("categories");
+  revalidatePath("/admin/categories");
+  return { success: true, message: "Category saved." };
+}
+
+export async function deleteCategory(id: string): Promise<{ error?: string }> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { error: "Not authorized." };
+  }
+
+  const db = serviceDb();
+  const { error } = await db.from("categories").delete().eq("id", id);
+  if (error) return { error: "Failed to delete category." };
+
+  revalidateTag("categories");
+  revalidatePath("/admin/categories");
+  return {};
+}
 
 export async function updateOrderStatus(
   orderId: string,

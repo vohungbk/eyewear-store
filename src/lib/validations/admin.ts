@@ -19,3 +19,19 @@ export const ProductSchema = z.object({
 });
 
 export type ProductFormValues = z.infer<typeof ProductSchema>;
+
+export const CategorySchema = z.object({
+  name: z.string().min(1, { error: "Name is required." }),
+  slug: z
+    .string()
+    .min(1, { error: "Slug is required." })
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+      error: "Slug must be lowercase letters, numbers, and hyphens only.",
+    }),
+  description: z.string().optional().nullable(),
+  image_url: z.string().optional().nullable(),
+  parent_id: z.string().optional().nullable(),
+  position: z.number().int().min(0).default(0),
+});
+
+export type CategoryFormValues = z.infer<typeof CategorySchema>;
