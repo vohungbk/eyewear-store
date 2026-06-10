@@ -2,14 +2,17 @@ import { createClient } from "@supabase/supabase-js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(): any {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
 export async function getAdminProducts(search?: string, page = 1, limit = 20) {
   const client = db();
+  if (!client) return { products: [] as AdminProduct[], count: 0 };
+
   let query = client
     .from("products")
     .select(
@@ -27,7 +30,9 @@ export async function getAdminProducts(search?: string, page = 1, limit = 20) {
 }
 
 export async function getAdminProduct(id: string) {
-  const { data } = await db()
+  const client = db();
+  if (!client) return null;
+  const { data } = await client
     .from("products")
     .select("*, product_images(*), product_variants(*), categories(id, name)")
     .eq("id", id)
@@ -37,6 +42,8 @@ export async function getAdminProduct(id: string) {
 
 export async function getAdminOrders(status?: string, page = 1, limit = 30) {
   const client = db();
+  if (!client) return { orders: [] as AdminOrder[], count: 0 };
+
   let query = client
     .from("orders")
     .select("id, customer_name, customer_email, total, status, created_at")
@@ -52,7 +59,9 @@ export async function getAdminOrders(status?: string, page = 1, limit = 30) {
 }
 
 export async function getAdminOrder(id: string) {
-  const { data } = await db()
+  const client = db();
+  if (!client) return null;
+  const { data } = await client
     .from("orders")
     .select("*, order_items(*)")
     .eq("id", id)
@@ -62,10 +71,12 @@ export async function getAdminOrder(id: string) {
 
 export async function getDashboardStats() {
   const client = db();
+  if (!client) {
+    return { totalOrders: 0, revenue: 0, activeProducts: 0, recentOrders: [] as AdminOrder[] };
+  }
+
   const [allOrders, products] = await Promise.all([
-    client
-      .from("orders")
-      .select("status, total"),
+    client.from("orders").select("status, total"),
     client
       .from("products")
       .select("id", { count: "exact", head: true })
@@ -92,7 +103,9 @@ export async function getDashboardStats() {
 }
 
 export async function getAdminCategories() {
-  const { data } = await db()
+  const client = db();
+  if (!client) return [] as AdminCategory[];
+  const { data } = await client
     .from("categories")
     .select("id, name, slug, description, image_url, parent_id, position, created_at")
     .order("position", { ascending: true });
@@ -100,7 +113,9 @@ export async function getAdminCategories() {
 }
 
 export async function getAdminCategory(id: string) {
-  const { data } = await db()
+  const client = db();
+  if (!client) return null;
+  const { data } = await client
     .from("categories")
     .select("id, name, slug, description, image_url, parent_id, position")
     .eq("id", id)

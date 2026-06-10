@@ -47,7 +47,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     slug: string;
   } | null;
 
-  const basePrice = product.product_variants?.[0]?.price ?? 0;
+  const basePrice = product.price ?? 0;
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">

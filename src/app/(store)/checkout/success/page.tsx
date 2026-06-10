@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import CartClearer from "@/components/checkout/CartClearer";
 import PurchaseTracker from "@/components/analytics/PurchaseTracker";
 import { formatPrice } from "@/lib/utils/format";
@@ -18,9 +18,10 @@ interface Props {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serviceClient(): any {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
@@ -32,7 +33,8 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   }
 
   // Verify payment intent server-side
-  const pi = await stripe.paymentIntents.retrieve(payment_intent);
+  if (!process.env.STRIPE_SECRET_KEY) redirect("/checkout");
+  const pi = await getStripe().paymentIntents.retrieve(payment_intent);
   if (pi.status !== "succeeded") {
     redirect("/checkout");
   }
@@ -40,11 +42,13 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   const fbEventId = (pi.metadata?.fb_event_id as string) ?? "";
 
   const db = serviceClient();
-  const { data: orderData } = await db
-    .from("orders")
-    .select("id, total, customer_name, status, order_items(product_id, quantity)")
-    .eq("stripe_payment_intent_id", payment_intent)
-    .single();
+  const { data: orderData } = db
+    ? await db
+        .from("orders")
+        .select("id, total, customer_name, status, order_items(product_id, quantity)")
+        .eq("stripe_payment_intent_id", payment_intent)
+        .single()
+    : { data: null };
   const order = orderData as {
     id: string;
     total: number;

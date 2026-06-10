@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import type { Json } from "@/types/database";
 import type { CartItem } from "@/types/cart";
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const fbEventId = crypto.randomUUID();
 
     // Create Stripe Payment Intent
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: Math.round(totals.total * 100),
       currency: "usd",
       automatic_payment_methods: { enabled: true },
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     if (itemsError) throw itemsError;
 
     // Attach order_id + fb_event_id to metadata for webhook + success page
-    await stripe.paymentIntents.update(paymentIntent.id, {
+    await getStripe().paymentIntents.update(paymentIntent.id, {
       metadata: { order_id: order.id, fb_event_id: fbEventId },
     });
 

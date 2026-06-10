@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 const FROM =
   process.env.RESEND_FROM_EMAIL ?? "EYEWEAR <onboarding@resend.dev>";
@@ -219,7 +223,7 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise
   const orderNumber = order.id.slice(0, 8).toUpperCase();
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: order.customer_email,
       subject: `Order Confirmed — #${orderNumber}`,

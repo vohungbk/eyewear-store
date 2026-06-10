@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import CopyrightYear from "@/components/layout/CopyrightYear";
 
 const FOOTER_LINKS = {
   Shop: [
@@ -108,7 +110,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 border-t border-neutral-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <p>© {new Date().getFullYear()} EYEWEAR. All rights reserved.</p>
+          <p>© <Suspense fallback="2026"><CopyrightYear /></Suspense> EYEWEAR. All rights reserved.</p>
           <div className="flex items-center gap-4">
             {/* Payment icons */}
             <span>Visa</span>

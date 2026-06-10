@@ -1,32 +1,22 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import Sidebar from "@/components/admin/Sidebar";
+import { Suspense } from "react";
+import AdminAuthGuard from "@/components/admin/AdminAuthGuard";
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  const profile = data as { role: string } | null;
-
-  if (profile?.role !== "admin") redirect("/");
-
   return (
     <div className="min-h-screen bg-neutral-50 flex">
-      <Sidebar />
-      <main className="flex-1 min-w-0 overflow-auto">{children}</main>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center w-full h-screen">
+            <div className="w-6 h-6 border-2 border-neutral-300 border-t-black rounded-full animate-spin" />
+          </div>
+        }
+      >
+        <AdminAuthGuard>{children}</AdminAuthGuard>
+      </Suspense>
     </div>
   );
 }

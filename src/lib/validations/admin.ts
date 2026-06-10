@@ -31,7 +31,7 @@ export const CategorySchema = z.object({
   description: z.string().optional().nullable(),
   image_url: z.string().optional().nullable(),
   parent_id: z.string().optional().nullable(),
-  position: z.number().int().min(0).default(0),
+  position: z.number().int().min(0),
 });
 
 export type CategoryFormValues = z.infer<typeof CategorySchema>;

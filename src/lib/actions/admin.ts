@@ -249,7 +249,7 @@ export async function createCategory(
     return { success: false, message: "Failed to create category." };
   }
 
-  revalidateTag("categories");
+  revalidateTag("categories", "minutes");
   revalidatePath("/admin/categories");
   redirect("/admin/categories");
 }
@@ -285,7 +285,7 @@ export async function updateCategory(
     return { success: false, message: "Failed to update category." };
   }
 
-  revalidateTag("categories");
+  revalidateTag("categories", "minutes");
   revalidatePath("/admin/categories");
   return { success: true, message: "Category saved." };
 }
@@ -301,7 +301,7 @@ export async function deleteCategory(id: string): Promise<{ error?: string }> {
   const { error } = await db.from("categories").delete().eq("id", id);
   if (error) return { error: "Failed to delete category." };
 
-  revalidateTag("categories");
+  revalidateTag("categories", "minutes");
   revalidatePath("/admin/categories");
   return {};
 }
