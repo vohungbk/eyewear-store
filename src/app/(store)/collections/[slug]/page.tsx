@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getCategory } from "@/lib/data/categories";
 import { getProducts } from "@/lib/data/products";
 import ProductCard from "@/components/ui/ProductCard";
+import SortSelect from "@/components/ui/SortSelect";
 
 interface CollectionPageProps {
   params: Promise<{ slug: string }>;
@@ -69,20 +70,7 @@ export default async function CollectionPage({
 
       {/* Sort */}
       <div className="flex justify-end mb-4">
-        <select
-          defaultValue={sort}
-          onChange={(e) => {
-            const url = new URL(window.location.href);
-            url.searchParams.set("sort", e.target.value);
-            url.searchParams.delete("page");
-            window.location.href = url.toString();
-          }}
-          className="text-sm border border-neutral-200 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:border-black"
-        >
-          <option value="newest">Newest</option>
-          <option value="price_asc">Price: Low to High</option>
-          <option value="price_desc">Price: High to Low</option>
-        </select>
+        <SortSelect value={sort} />
       </div>
 
       {/* Grid */}
