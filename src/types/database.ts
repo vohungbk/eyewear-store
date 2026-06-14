@@ -187,6 +187,8 @@ export type Database = {
             | "delivered"
             | "cancelled";
           subtotal: number;
+          discount: number;
+          discount_code: string | null;
           shipping: number;
           tax: number;
           total: number;
@@ -208,6 +210,8 @@ export type Database = {
             | "delivered"
             | "cancelled";
           subtotal: number;
+          discount?: number;
+          discount_code?: string | null;
           shipping?: number;
           tax?: number;
           total: number;
@@ -229,6 +233,8 @@ export type Database = {
             | "delivered"
             | "cancelled";
           subtotal?: number;
+          discount?: number;
+          discount_code?: string | null;
           shipping?: number;
           tax?: number;
           total?: number;
@@ -238,6 +244,102 @@ export type Database = {
           customer_email?: string;
           customer_name?: string;
           created_at?: string;
+        };
+      };
+      discount_codes: {
+        Row: {
+          id: string;
+          code: string;
+          type: "percent" | "fixed";
+          value: number;
+          min_order: number;
+          usage_limit: number | null;
+          usage_count: number;
+          is_active: boolean;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          type: "percent" | "fixed";
+          value: number;
+          min_order?: number;
+          usage_limit?: number | null;
+          usage_count?: number;
+          is_active?: boolean;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          type?: "percent" | "fixed";
+          value?: number;
+          min_order?: number;
+          usage_limit?: number | null;
+          usage_count?: number;
+          is_active?: boolean;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      wishlists: {
+        Row: {
+          id: string;
+          user_id: string;
+          product_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          product_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          product_id?: string;
+          created_at?: string;
+        };
+      };
+      reviews: {
+        Row: {
+          id: string;
+          product_id: string;
+          user_id: string;
+          rating: number;
+          title: string | null;
+          body: string | null;
+          is_approved: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          user_id: string;
+          rating: number;
+          title?: string | null;
+          body?: string | null;
+          is_approved?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          user_id?: string;
+          rating?: number;
+          title?: string | null;
+          body?: string | null;
+          is_approved?: boolean;
+          created_at?: string;
+          updated_at?: string;
         };
       };
       order_items: {
@@ -299,6 +401,9 @@ export type ProductImage =
   Database["public"]["Tables"]["product_images"]["Row"];
 export type Order = Database["public"]["Tables"]["orders"]["Row"];
 export type OrderItem = Database["public"]["Tables"]["order_items"]["Row"];
+export type DiscountCode = Database["public"]["Tables"]["discount_codes"]["Row"];
+export type Wishlist = Database["public"]["Tables"]["wishlists"]["Row"];
+export type Review = Database["public"]["Tables"]["reviews"]["Row"];
 
 // Extended types with relations
 export type ProductWithImages = Product & {

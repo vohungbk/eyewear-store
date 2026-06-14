@@ -35,12 +35,14 @@ const elementsAppearance = {
   },
 };
 
-function calcTotals(items: CartItem[]) {
+function calcTotals(items: CartItem[], discountAmount = 0) {
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shipping = subtotal >= 100 ? 0 : 9.99;
-  const tax = parseFloat((subtotal * 0.08).toFixed(2));
-  const total = parseFloat((subtotal + shipping + tax).toFixed(2));
-  return { subtotal, shipping, tax, total };
+  const discount = Math.min(discountAmount, subtotal);
+  const discounted = subtotal - discount;
+  const shipping = discounted >= 100 ? 0 : 9.99;
+  const tax = parseFloat((discounted * 0.08).toFixed(2));
+  const total = parseFloat((discounted + shipping + tax).toFixed(2));
+  return { subtotal, discount, shipping, tax, total };
 }
 
 interface FormValues {
@@ -141,9 +143,11 @@ function PaymentStep({
 function OrderSummary({
   items,
   totals,
+  couponCode,
 }: {
   items: CartItem[];
   totals: ReturnType<typeof calcTotals>;
+  couponCode?: string;
 }) {
   return (
     <div className="border border-neutral-200 rounded-lg p-6 sticky top-24">
@@ -180,6 +184,19 @@ function OrderSummary({
           <dt className="text-neutral-500">Subtotal</dt>
           <dd>{formatPrice(totals.subtotal)}</dd>
         </div>
+        {totals.discount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <dt>
+              Discount
+              {couponCode && (
+                <span className="ml-1 text-[10px] font-mono bg-green-50 px-1.5 py-0.5 rounded">
+                  {couponCode}
+                </span>
+              )}
+            </dt>
+            <dd>-{formatPrice(totals.discount)}</dd>
+          </div>
+        )}
         <div className="flex justify-between">
           <dt className="text-neutral-500">Shipping</dt>
           <dd>
@@ -266,6 +283,14 @@ export default function CheckoutForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const [couponInput, setCouponInput] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+  } | null>(null);
+
   const [form, setForm] = useState<FormValues>({
     email: defaultEmail,
     full_name: defaultName,
@@ -299,7 +324,31 @@ export default function CheckoutForm({
     }
   }, [hydrated, items.length, router]);
 
-  const totals = calcTotals(items);
+  const totals = calcTotals(items, appliedCoupon?.discountAmount ?? 0);
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    setIsApplyingCoupon(true);
+    setCouponError("");
+    try {
+      const res = await fetch("/api/discount/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput.trim(), subtotal: calcTotals(items).subtotal }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedCoupon({ code: couponInput.trim().toUpperCase(), discountAmount: data.discountAmount });
+        setCouponInput("");
+      } else {
+        setCouponError(data.message ?? "Invalid code.");
+      }
+    } catch {
+      setCouponError("Failed to apply code. Please try again.");
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -332,6 +381,7 @@ export default function CheckoutForm({
             country: form.country,
           },
           totals,
+          discountCode: appliedCoupon?.code,
         }),
       });
 
@@ -477,6 +527,53 @@ export default function CheckoutForm({
               </div>
             </section>
 
+            {/* Discount Code */}
+            <section>
+              <h2 className="text-base font-semibold mb-4">Discount Code</h2>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-md px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 text-sm">✓</span>
+                    <span className="text-sm font-mono font-semibold text-green-700">
+                      {appliedCoupon.code}
+                    </span>
+                    <span className="text-sm text-green-600">
+                      applied — saving {formatPrice(appliedCoupon.discountAmount)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAppliedCoupon(null)}
+                    className="text-xs text-neutral-400 hover:text-red-500 transition-colors ml-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => { setCouponInput(e.target.value); setCouponError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyCoupon())}
+                    placeholder="Enter code"
+                    className="flex-1 border border-neutral-200 rounded-md px-3 py-2.5 text-sm uppercase tracking-wider focus:outline-none focus:border-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={isApplyingCoupon || !couponInput.trim()}
+                    className="px-4 py-2.5 border border-neutral-300 rounded-md text-sm font-medium hover:border-black transition-colors disabled:opacity-50"
+                  >
+                    {isApplyingCoupon ? "…" : "Apply"}
+                  </button>
+                </div>
+              )}
+              {couponError && (
+                <p className="text-xs text-red-600 mt-1.5">{couponError}</p>
+              )}
+            </section>
+
             {error && (
               <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-md">
                 {error}
@@ -508,7 +605,7 @@ export default function CheckoutForm({
 
       {/* Order summary — shown first on mobile */}
       <div className="lg:col-span-2 order-1 lg:order-2">
-        <OrderSummary items={items} totals={totals} />
+        <OrderSummary items={items} totals={totals} couponCode={appliedCoupon?.code} />
       </div>
     </div>
   );

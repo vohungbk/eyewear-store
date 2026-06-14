@@ -1,9 +1,14 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
 import { getProduct, getRelatedProducts } from "@/lib/data/products";
+import { getProductReviews } from "@/lib/data/reviews";
 import ProductGallery from "@/components/ui/ProductGallery";
 import ProductDetail from "@/components/ui/ProductDetail";
 import ProductCard from "@/components/ui/ProductCard";
+import WishlistButton from "@/components/ui/WishlistButton";
+import ReviewList from "@/components/ui/ReviewList";
+import ReviewForm from "@/components/ui/ReviewForm";
 import ViewContentTracker from "@/components/analytics/ViewContentTracker";
 
 interface ProductPageProps {
@@ -36,11 +41,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) notFound();
 
-  const related = await getRelatedProducts(
-    product.id,
-    product.category_id,
-    4
-  );
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [related, reviewSummary, wishlistData] = await Promise.all([
+    getRelatedProducts(product.id, product.category_id, 4),
+    getProductReviews(product.id),
+    user
+      ? supabase.from("wishlists").select("id").eq("user_id", user.id).eq("product_id", product.id).single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const isWishlisted = !!wishlistData.data;
 
   const category = (product as any).categories as {
     name: string;
@@ -87,7 +99,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {category.name}
             </p>
           )}
-          <h1 className="text-3xl font-bold">{product.name}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-3xl font-bold">{product.name}</h1>
+            <WishlistButton productId={product.id} initialWishlisted={isWishlisted} />
+          </div>
 
           {product.description && (
             <p className="text-sm text-neutral-600 leading-relaxed">
@@ -114,6 +129,29 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {label}
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Reviews */}
+      <div className="mt-16 border-t border-neutral-100 pt-12">
+        <h2 className="text-xl font-bold mb-8">Customer Reviews</h2>
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          <ReviewList summary={reviewSummary} />
+          <div>
+            <h3 className="text-base font-semibold mb-5">
+              {user ? "Write a Review" : "Sign in to leave a review"}
+            </h3>
+            {user ? (
+              <ReviewForm productId={product.id} />
+            ) : (
+              <a
+                href={`/login?redirectTo=/products/${product.slug}`}
+                className="inline-block px-5 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium hover:border-black transition-colors"
+              >
+                Sign in to review
+              </a>
+            )}
           </div>
         </div>
       </div>

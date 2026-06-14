@@ -23,19 +23,26 @@ interface ProductsPageProps {
     sort?: string;
     category?: string;
     page?: string;
+    price_min?: string;
+    price_max?: string;
   }>;
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { sort = "newest", category, page = "1" } = await searchParams;
+  const { sort = "newest", category, page = "1", price_min, price_max } = await searchParams;
 
   const currentPage = Math.max(1, parseInt(page, 10) || 1);
   const offset = (currentPage - 1) * PAGE_SIZE;
+
+  const priceMin = price_min ? parseFloat(price_min) : undefined;
+  const priceMax = price_max ? parseFloat(price_max) : undefined;
 
   const [{ products, total }, categories] = await Promise.all([
     getProducts({
       categoryId: category,
       sort: sort as "newest" | "price_asc" | "price_desc",
+      priceMin,
+      priceMax,
       limit: PAGE_SIZE,
       offset,
     }),
@@ -59,6 +66,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           sortOptions={SORT_OPTIONS}
           currentSort={sort}
           currentCategory={category}
+          currentPriceMin={price_min}
+          currentPriceMax={price_max}
         />
       </Suspense>
 
@@ -82,7 +91,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <a
               key={p}
-              href={`/products?page=${p}${sort !== "newest" ? `&sort=${sort}` : ""}${category ? `&category=${category}` : ""}`}
+              href={`/products?page=${p}${sort !== "newest" ? `&sort=${sort}` : ""}${category ? `&category=${category}` : ""}${price_min ? `&price_min=${price_min}` : ""}${price_max ? `&price_max=${price_max}` : ""}`}
               className={`px-3 py-1.5 rounded text-sm font-medium border transition-colors ${
                 p === currentPage
                   ? "bg-black text-white border-black"

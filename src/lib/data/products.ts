@@ -20,6 +20,8 @@ export interface GetProductsOptions {
   search?: string;
   featured?: boolean;
   sort?: "newest" | "price_asc" | "price_desc";
+  priceMin?: number;
+  priceMax?: number;
   limit?: number;
   offset?: number;
 }
@@ -37,6 +39,8 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<{
     search,
     featured,
     sort = "newest",
+    priceMin,
+    priceMax,
     limit = 12,
     offset = 0,
   } = options;
@@ -54,6 +58,8 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<{
   if (search) {
     query = query.textSearch("search_vector", search, { type: "websearch" });
   }
+  if (priceMin !== undefined) query = query.gte("price", priceMin);
+  if (priceMax !== undefined) query = query.lte("price", priceMax);
 
   switch (sort) {
     case "price_asc":

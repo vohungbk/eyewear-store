@@ -27,10 +27,11 @@ export async function POST(request: Request) {
         postal_code: string;
         country: string;
       };
-      totals: { subtotal: number; shipping: number; tax: number; total: number };
+      totals: { subtotal: number; discount: number; shipping: number; tax: number; total: number };
+      discountCode?: string;
     };
 
-    const { items, contact, shippingAddress, totals } = body;
+    const { items, contact, shippingAddress, totals, discountCode } = body;
 
     if (!items?.length) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
@@ -61,6 +62,8 @@ export async function POST(request: Request) {
         user_id: user?.id ?? null,
         status: "pending",
         subtotal: totals.subtotal,
+        discount: totals.discount ?? 0,
+        discount_code: discountCode ?? null,
         shipping: totals.shipping,
         tax: totals.tax,
         total: totals.total,

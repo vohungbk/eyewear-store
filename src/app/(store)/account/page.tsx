@@ -35,14 +35,25 @@ export default async function AccountPage() {
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">My Account</h1>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="text-sm text-neutral-500 hover:text-black transition-colors"
+        <div className="flex items-center gap-4">
+          <Link
+            href="/account/wishlist"
+            className="text-sm text-neutral-500 hover:text-black transition-colors flex items-center gap-1.5"
           >
-            Sign out
-          </button>
-        </form>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            Wishlist
+          </Link>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="text-sm text-neutral-500 hover:text-black transition-colors"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="grid gap-10 lg:grid-cols-3">

@@ -2,21 +2,24 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatPrice, getPrimaryImage, getDiscountPercent } from "@/lib/utils/format";
 import type { ProductWithImages } from "@/types/database";
+import WishlistButton from "./WishlistButton";
 
 interface ProductCardProps {
   product: ProductWithImages;
+  wishlisted?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, wishlisted = false }: ProductCardProps) {
   const image = getPrimaryImage(product.product_images ?? []);
   const discount = getDiscountPercent(product.price, product.compare_at_price);
 
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="group block"
-      aria-label={product.name}
-    >
+    <div className="group relative">
+      <Link
+        href={`/products/${product.slug}`}
+        className="block"
+        aria-label={product.name}
+      >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden rounded-lg bg-neutral-100">
         {image ? (
@@ -84,6 +87,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
       </div>
-    </Link>
+      </Link>
+
+      {/* Wishlist button — outside Link to avoid nested interactive elements */}
+      <div className="absolute top-2 right-2 z-10">
+        <WishlistButton productId={product.id} initialWishlisted={wishlisted} size="sm" />
+      </div>
+    </div>
   );
 }

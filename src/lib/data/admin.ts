@@ -123,6 +123,46 @@ export async function getAdminCategory(id: string) {
   return data as AdminCategory | null;
 }
 
+export async function getAdminDiscounts() {
+  const client = db();
+  if (!client) return [] as AdminDiscount[];
+  const { data } = await client
+    .from("discount_codes")
+    .select("id, code, type, value, min_order, usage_limit, usage_count, is_active, expires_at, created_at")
+    .order("created_at", { ascending: false });
+  return (data ?? []) as AdminDiscount[];
+}
+
+export async function getAdminDiscount(id: string) {
+  const client = db();
+  if (!client) return null;
+  const { data } = await client
+    .from("discount_codes")
+    .select("id, code, type, value, min_order, usage_limit, usage_count, is_active, expires_at")
+    .eq("id", id)
+    .single();
+  return data as AdminDiscount | null;
+}
+
+export async function getAdminReviews(approved?: boolean, page = 1, limit = 30) {
+  const client = db();
+  if (!client) return { reviews: [] as AdminReview[], count: 0 };
+
+  let query = client
+    .from("reviews")
+    .select(
+      "id, rating, title, body, is_approved, created_at, products(name, slug), profiles(full_name)",
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .range((page - 1) * limit, page * limit - 1);
+
+  if (approved !== undefined) query = query.eq("is_approved", approved);
+
+  const { data, count } = await query;
+  return { reviews: (data ?? []) as AdminReview[], count: count ?? 0 };
+}
+
 // ─── Local types ─────────────────────────────────────────────────────────────
 
 export interface AdminProduct {
@@ -186,6 +226,30 @@ export interface AdminCategory {
   parent_id: string | null;
   position: number;
   created_at?: string;
+}
+
+export interface AdminDiscount {
+  id: string;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  min_order: number;
+  usage_limit: number | null;
+  usage_count: number;
+  is_active: boolean;
+  expires_at: string | null;
+  created_at?: string;
+}
+
+export interface AdminReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  is_approved: boolean;
+  created_at: string;
+  products: { name: string; slug: string } | null;
+  profiles: { full_name: string | null } | null;
 }
 
 export interface AdminOrderDetail {
