@@ -262,6 +262,99 @@ export async function getAdminCustomer(userId: string) {
   };
 }
 
+export interface AnalyticsData {
+  revenueByDay: { date: string; revenue: number }[];
+  ordersByStatus: { status: string; count: number }[];
+  topProducts: { name: string; slug: string; revenue: number; units: number }[];
+  aov: number;
+  totalRevenue: number;
+  totalOrders: number;
+  newCustomersCount: number;
+  returningCustomersCount: number;
+  period: number;
+}
+
+export async function getAnalytics(days = 30): Promise<AnalyticsData> {
+  const empty: AnalyticsData = {
+    revenueByDay: [], ordersByStatus: [], topProducts: [],
+    aov: 0, totalRevenue: 0, totalOrders: 0,
+    newCustomersCount: 0, returningCustomersCount: 0, period: days,
+  };
+  const client = db();
+  if (!client) return empty;
+
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const [periodOrdersRes, allStatusRes, itemsRes] = await Promise.all([
+    client.from("orders").select("id, user_id, total, status, created_at").gte("created_at", since),
+    client.from("orders").select("status"),
+    client.from("order_items").select("quantity, unit_price, product_id, product_snapshot, products(name, slug)").gte("created_at", since),
+  ]);
+
+  type OrderRow = { id: string; user_id: string | null; total: number; status: string; created_at: string };
+  const periodOrders = (periodOrdersRes.data ?? []) as OrderRow[];
+  const paidOrders = periodOrders.filter((o) => !["pending", "cancelled"].includes(o.status));
+
+  // Revenue by day — pre-fill every day in range
+  const dayMap = new Map<string, number>();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    dayMap.set(d.toISOString().slice(0, 10), 0);
+  }
+  for (const o of paidOrders) {
+    const key = o.created_at.slice(0, 10);
+    if (dayMap.has(key)) dayMap.set(key, dayMap.get(key)! + o.total);
+  }
+  const revenueByDay = Array.from(dayMap.entries()).map(([date, revenue]) => ({ date, revenue }));
+
+  // All-time orders by status
+  const allOrders = (allStatusRes.data ?? []) as { status: string }[];
+  const statusMap = new Map<string, number>();
+  for (const o of allOrders) statusMap.set(o.status, (statusMap.get(o.status) ?? 0) + 1);
+  const ordersByStatus = Array.from(statusMap.entries())
+    .map(([status, count]) => ({ status, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Top products by revenue
+  type ItemRow = { quantity: number; unit_price: number; product_id: string | null; product_snapshot: { name?: string }; products: { name: string; slug: string } | null };
+  const items = (itemsRes.data ?? []) as ItemRow[];
+  const productMap = new Map<string, { name: string; slug: string; revenue: number; units: number }>();
+  for (const item of items) {
+    const key = item.product_id ?? `snap_${item.product_snapshot?.name ?? "unknown"}`;
+    const name = item.products?.name ?? item.product_snapshot?.name ?? "Unknown Product";
+    const slug = item.products?.slug ?? "";
+    const existing = productMap.get(key);
+    if (existing) {
+      existing.revenue += item.unit_price * item.quantity;
+      existing.units += item.quantity;
+    } else {
+      productMap.set(key, { name, slug, revenue: item.unit_price * item.quantity, units: item.quantity });
+    }
+  }
+  const topProducts = Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+
+  const totalRevenue = paidOrders.reduce((s, o) => s + o.total, 0);
+  const aov = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
+
+  // New vs returning customers (logged-in only)
+  const userIds = [...new Set(paidOrders.filter((o) => o.user_id).map((o) => o.user_id!))] as string[];
+  let newCustomersCount = userIds.length;
+  let returningCustomersCount = 0;
+  if (userIds.length > 0) {
+    const prevRes = await client
+      .from("orders")
+      .select("user_id")
+      .in("user_id", userIds)
+      .lt("created_at", since)
+      .not("status", "in", "(pending,cancelled)");
+    const prevSet = new Set(((prevRes.data ?? []) as { user_id: string }[]).map((o) => o.user_id));
+    returningCustomersCount = userIds.filter((id) => prevSet.has(id)).length;
+    newCustomersCount = userIds.length - returningCustomersCount;
+  }
+
+  return { revenueByDay, ordersByStatus, topProducts, aov, totalRevenue, totalOrders: paidOrders.length, newCustomersCount, returningCustomersCount, period: days };
+}
+
 // ─── Local types ─────────────────────────────────────────────────────────────
 
 export interface AdminProduct {
