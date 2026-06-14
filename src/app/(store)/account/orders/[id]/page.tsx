@@ -91,6 +91,22 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         </div>
       )}
 
+      {/* Tracking info */}
+      {order.tracking_number && (
+        <div className="mb-6 flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+          <svg className="w-5 h-5 text-purple-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          <div>
+            <p className="text-xs font-medium text-purple-600">Your order is on its way</p>
+            <p className="text-sm font-semibold text-purple-800">
+              {order.shipping_carrier && <span className="mr-1.5">{order.shipping_carrier} —</span>}
+              Tracking: {order.tracking_number}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Items */}
       <div className="border border-neutral-200 rounded-lg overflow-hidden mb-6">
         <div className="px-4 py-3 bg-neutral-50 border-b border-neutral-200">

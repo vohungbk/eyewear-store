@@ -10,6 +10,8 @@ import WishlistButton from "@/components/ui/WishlistButton";
 import ReviewList from "@/components/ui/ReviewList";
 import ReviewForm from "@/components/ui/ReviewForm";
 import ViewContentTracker from "@/components/analytics/ViewContentTracker";
+import ProductViewTracker from "@/components/ui/ProductViewTracker";
+import RecentlyViewed from "@/components/ui/RecentlyViewed";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -64,6 +66,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       <ViewContentTracker productId={product.id} name={product.name} price={basePrice} />
+      <ProductViewTracker item={{
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        price: basePrice,
+        imageUrl: product.product_images?.find((i) => i.is_primary)?.url ?? product.product_images?.[0]?.url ?? null,
+      }} />
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-neutral-500 mb-6">
         <a href="/" className="hover:text-black transition-colors">Home</a>
@@ -167,6 +176,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
       )}
+
+      {/* Recently viewed */}
+      <RecentlyViewed excludeId={product.id} />
     </div>
   );
 }

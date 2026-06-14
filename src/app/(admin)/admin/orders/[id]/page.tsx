@@ -68,9 +68,30 @@ export default async function AdminOrderPage({ params }: Props) {
           >
             {order.status}
           </span>
-          <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
+          <OrderStatusUpdater
+            orderId={order.id}
+            currentStatus={order.status}
+            currentTracking={order.tracking_number}
+            currentCarrier={order.shipping_carrier}
+          />
         </div>
       </div>
+
+      {/* Tracking info */}
+      {order.tracking_number && (
+        <div className="mb-6 flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+          <svg className="w-4 h-4 text-purple-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          <div>
+            <p className="text-xs text-purple-600 font-medium">Tracking</p>
+            <p className="text-sm font-semibold text-purple-800">
+              {order.shipping_carrier && <span className="mr-1.5">{order.shipping_carrier} —</span>}
+              {order.tracking_number}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2 mb-6">
         {/* Customer */}

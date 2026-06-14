@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import CopyrightYear from "@/components/layout/CopyrightYear";
+import NewsletterForm from "@/components/layout/NewsletterForm";
 
 const FOOTER_LINKS = {
   Shop: [
@@ -27,6 +28,17 @@ export default function Footer() {
   return (
     <footer className="bg-neutral-950 text-neutral-400 mt-auto">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        {/* Newsletter */}
+        <div className="mb-10 pb-10 border-b border-neutral-800 grid grid-cols-1 gap-6 md:grid-cols-2 md:items-center">
+          <div>
+            <h3 className="text-white text-base font-semibold">Stay in the loop</h3>
+            <p className="mt-1 text-sm text-neutral-400">
+              Get exclusive deals, new arrivals, and eyewear tips delivered to your inbox.
+            </p>
+          </div>
+          <NewsletterForm />
+        </div>
+
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getFeaturedProducts } from "@/lib/data/products";
 import { getCategories } from "@/lib/data/categories";
 import ProductCard from "@/components/ui/ProductCard";
+import RecentlyViewed from "@/components/ui/RecentlyViewed";
 
 export default async function HomePage() {
   const [featured, categories] = await Promise.all([
@@ -77,6 +78,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Recently viewed */}
+      <RecentlyViewed />
 
       {/* Value props */}
       <section className="bg-neutral-950 text-white mt-8">

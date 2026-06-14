@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDashboardStats } from "@/lib/data/admin";
+import { getDashboardStats, getAdminLowStockVariants } from "@/lib/data/admin";
 import { formatPrice } from "@/lib/utils/format";
 
 export const metadata: Metadata = { title: "Admin — Overview" };
@@ -15,19 +15,75 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default async function AdminPage() {
-  const { totalOrders, revenue, activeProducts, recentOrders } =
-    await getDashboardStats();
+  const [{ totalOrders, revenue, activeProducts, recentOrders, lowStockCount }, lowStockVariants] =
+    await Promise.all([getDashboardStats(), getAdminLowStockVariants()]);
 
   return (
     <div className="p-8">
       <h1 className="text-xl font-bold mb-6">Overview</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Revenue" value={formatPrice(revenue)} />
         <StatCard label="Total Orders" value={String(totalOrders)} />
         <StatCard label="Active Products" value={String(activeProducts)} />
+        <StatCard
+          label="Low Stock Variants"
+          value={String(lowStockCount)}
+          alert={lowStockCount > 0}
+          href="/admin/products"
+        />
       </div>
+
+      {/* Low Stock Alert */}
+      {lowStockVariants.length > 0 && (
+        <div className="bg-white border border-orange-200 rounded-lg overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-orange-100 bg-orange-50">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h2 className="text-sm font-semibold text-orange-700">Low Stock Alert</h2>
+            </div>
+            <Link href="/admin/products" className="text-xs text-orange-600 hover:text-orange-800 transition-colors">
+              View all products →
+            </Link>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-neutral-100">
+                <th className="text-left font-medium text-neutral-500 px-5 py-2.5">Product</th>
+                <th className="text-left font-medium text-neutral-500 px-5 py-2.5">Variant</th>
+                <th className="text-left font-medium text-neutral-500 px-5 py-2.5">In Stock</th>
+                <th className="text-left font-medium text-neutral-500 px-5 py-2.5">Threshold</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-50">
+              {lowStockVariants.map((v) => (
+                <tr key={v.id} className="hover:bg-neutral-50">
+                  <td className="px-5 py-2.5">
+                    {v.products ? (
+                      <Link href={`/admin/products/${v.products.id}/edit`} className="font-medium hover:underline">
+                        {v.products.name}
+                      </Link>
+                    ) : "—"}
+                  </td>
+                  <td className="px-5 py-2.5 text-neutral-600">
+                    {v.name}
+                    {v.sku && <span className="ml-1.5 text-xs text-neutral-400 font-mono">{v.sku}</span>}
+                  </td>
+                  <td className="px-5 py-2.5">
+                    <span className={`font-semibold ${v.stock_quantity === 0 ? "text-red-600" : "text-orange-600"}`}>
+                      {v.stock_quantity}
+                    </span>
+                  </td>
+                  <td className="px-5 py-2.5 text-neutral-400 text-xs">{v.low_stock_threshold}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Recent Orders */}
       <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
@@ -98,11 +154,14 @@ export default async function AdminPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
-      <p className="text-xs text-neutral-500 mb-1">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
-    </div>
+function StatCard({ label, value, alert, href }: { label: string; value: string; alert?: boolean; href?: string }) {
+  const inner = (
+    <>
+      <p className={`text-xs mb-1 ${alert ? "text-orange-500" : "text-neutral-500"}`}>{label}</p>
+      <p className={`text-2xl font-bold ${alert ? "text-orange-600" : ""}`}>{value}</p>
+    </>
   );
+  const cls = `bg-white border rounded-lg px-5 py-4 ${alert ? "border-orange-200" : "border-neutral-200"}`;
+  if (href) return <Link href={href} className={`${cls} block hover:border-orange-400 transition-colors`}>{inner}</Link>;
+  return <div className={cls}>{inner}</div>;
 }

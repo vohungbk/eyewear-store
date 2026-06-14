@@ -59,6 +59,9 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                   Category
                 </th>
                 <th className="text-left font-medium text-neutral-500 px-5 py-3">
+                  Stock
+                </th>
+                <th className="text-left font-medium text-neutral-500 px-5 py-3">
                   Status
                 </th>
                 <th className="px-5 py-3" />
@@ -101,6 +104,20 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                     </td>
                     <td className="px-5 py-3 text-neutral-500">
                       {product.categories?.name ?? "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      {(() => {
+                        const variants = product.product_variants ?? [];
+                        if (variants.length === 0) return <span className="text-xs text-neutral-400">—</span>;
+                        const minStock = Math.min(...variants.map((v) => v.stock_quantity));
+                        const isLow = variants.some((v) => v.stock_quantity <= v.low_stock_threshold);
+                        const isOut = variants.every((v) => v.stock_quantity === 0);
+                        return (
+                          <span className={`text-xs font-semibold ${isOut ? "text-red-600" : isLow ? "text-orange-500" : "text-green-700"}`}>
+                            {isOut ? "Out" : `${minStock}${isLow ? " ⚠" : ""}`}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-3">
                       <span

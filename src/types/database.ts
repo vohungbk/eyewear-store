@@ -122,6 +122,7 @@ export type Database = {
           sku: string | null;
           price_modifier: number;
           stock_quantity: number;
+          low_stock_threshold: number;
           attributes: Json;
           created_at: string;
         };
@@ -132,6 +133,7 @@ export type Database = {
           sku?: string | null;
           price_modifier?: number;
           stock_quantity?: number;
+          low_stock_threshold?: number;
           attributes?: Json;
           created_at?: string;
         };
@@ -142,6 +144,7 @@ export type Database = {
           sku?: string | null;
           price_modifier?: number;
           stock_quantity?: number;
+          low_stock_threshold?: number;
           attributes?: Json;
           created_at?: string;
         };
@@ -197,6 +200,8 @@ export type Database = {
           billing_address: Json | null;
           customer_email: string;
           customer_name: string;
+          tracking_number: string | null;
+          shipping_carrier: string | null;
           created_at: string;
         };
         Insert: {
@@ -220,6 +225,8 @@ export type Database = {
           billing_address?: Json | null;
           customer_email: string;
           customer_name: string;
+          tracking_number?: string | null;
+          shipping_carrier?: string | null;
           created_at?: string;
         };
         Update: {
@@ -243,6 +250,8 @@ export type Database = {
           billing_address?: Json | null;
           customer_email?: string;
           customer_name?: string;
+          tracking_number?: string | null;
+          shipping_carrier?: string | null;
           created_at?: string;
         };
       };
@@ -342,6 +351,35 @@ export type Database = {
           updated_at?: string;
         };
       };
+      newsletter_subscribers: {
+        Row: {
+          id: string;
+          email: string;
+          name: string | null;
+          source: string;
+          is_confirmed: boolean;
+          subscribed_at: string;
+          unsubscribed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          name?: string | null;
+          source?: string;
+          is_confirmed?: boolean;
+          subscribed_at?: string;
+          unsubscribed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          name?: string | null;
+          source?: string;
+          is_confirmed?: boolean;
+          subscribed_at?: string;
+          unsubscribed_at?: string | null;
+        };
+      };
       order_items: {
         Row: {
           id: string;
@@ -404,6 +442,7 @@ export type OrderItem = Database["public"]["Tables"]["order_items"]["Row"];
 export type DiscountCode = Database["public"]["Tables"]["discount_codes"]["Row"];
 export type Wishlist = Database["public"]["Tables"]["wishlists"]["Row"];
 export type Review = Database["public"]["Tables"]["reviews"]["Row"];
+export type NewsletterSubscriber = Database["public"]["Tables"]["newsletter_subscribers"]["Row"];
 
 // Extended types with relations
 export type ProductWithImages = Product & {

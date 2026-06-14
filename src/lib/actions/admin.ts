@@ -6,6 +6,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { ProductSchema, type ProductFormValues, CategorySchema, type CategoryFormValues } from "@/lib/validations/admin";
 import type { FormState } from "@/lib/validations/auth";
+import { sendShippedEmail } from "@/lib/email";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serviceDb(): any {
@@ -308,7 +309,8 @@ export async function deleteCategory(id: string): Promise<{ error?: string }> {
 
 export async function updateOrderStatus(
   orderId: string,
-  status: string
+  status: string,
+  tracking?: { trackingNumber?: string; shippingCarrier?: string }
 ): Promise<{ error?: string }> {
   try {
     await requireAdmin();
@@ -317,12 +319,38 @@ export async function updateOrderStatus(
   }
 
   const db = serviceDb();
+
+  const updateData: Record<string, string | null> = { status };
+  if (tracking?.trackingNumber !== undefined) {
+    updateData.tracking_number = tracking.trackingNumber || null;
+    updateData.shipping_carrier = tracking.shippingCarrier || null;
+  }
+
   const { error } = await db
     .from("orders")
-    .update({ status })
+    .update(updateData)
     .eq("id", orderId);
 
   if (error) return { error: "Failed to update order status." };
+
+  // Send shipped email when status changes to "shipped"
+  if (status === "shipped") {
+    const { data: order } = await db
+      .from("orders")
+      .select("customer_name, customer_email, tracking_number, shipping_carrier")
+      .eq("id", orderId)
+      .single();
+
+    if (order?.customer_email) {
+      sendShippedEmail({
+        orderId,
+        customerName: order.customer_name ?? "",
+        customerEmail: order.customer_email,
+        trackingNumber: order.tracking_number ?? null,
+        shippingCarrier: order.shipping_carrier ?? null,
+      }).catch(() => {});
+    }
+  }
 
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");

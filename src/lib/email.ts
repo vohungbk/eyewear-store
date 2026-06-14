@@ -217,6 +217,121 @@ function buildHtml(order: OrderEmailData): string {
 </html>`;
 }
 
+export async function sendShippedEmail(data: {
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  trackingNumber: string | null;
+  shippingCarrier: string | null;
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const orderNumber = data.orderId.slice(0, 8).toUpperCase();
+  const orderUrl = `${SITE_URL}/account/orders/${data.orderId}`;
+
+  const trackingSection = data.trackingNumber
+    ? `
+    <tr>
+      <td style="padding:24px 32px;background:#fafafa;border-top:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;">
+        <p style="margin:0 0 8px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#888;">Tracking Info</p>
+        <p style="margin:0;font-size:14px;color:#111;">
+          <strong>${data.shippingCarrier ? data.shippingCarrier + ' — ' : ''}${data.trackingNumber}</strong>
+        </p>
+      </td>
+    </tr>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>Your Order Has Shipped</title></head>
+<body style="margin:0;padding:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f6f6f6;padding:32px 0;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="580"
+        style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
+        <tr><td style="background:#000;padding:24px 32px;">
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+        </td></tr>
+        <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #f0f0f0;">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111;">Your order is on its way! 🚚</p>
+          <p style="margin:0;font-size:14px;color:#666;line-height:1.6;">
+            Hi ${data.customerName}, great news — your order #${orderNumber} has been shipped.
+          </p>
+        </td></tr>
+        ${trackingSection}
+        <tr><td style="padding:32px;">
+          <a href="${orderUrl}"
+            style="display:inline-block;background:#000;color:#fff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:6px;text-decoration:none;">
+            Track Your Order
+          </a>
+        </td></tr>
+        <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
+          <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
+            You received this email because you placed an order at EYEWEAR.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: data.customerEmail,
+      subject: `Your order #${orderNumber} has shipped!`,
+      html,
+    });
+  } catch {}
+}
+
+export async function sendNewsletterWelcomeEmail(email: string, name?: string | null): Promise<void> {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>Welcome to EYEWEAR</title></head>
+<body style="margin:0;padding:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f6f6f6;padding:32px 0;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="580"
+        style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
+        <tr><td style="background:#000;padding:24px 32px;">
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111;">
+            Welcome${name ? ', ' + name : ''}!
+          </p>
+          <p style="margin:0 0 20px;font-size:14px;color:#666;line-height:1.6;">
+            You're now subscribed to exclusive deals, new arrivals, and eyewear tips. Expect
+            great things in your inbox.
+          </p>
+          <a href="${SITE_URL}/products"
+            style="display:inline-block;background:#000;color:#fff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:6px;text-decoration:none;">
+            Shop Now
+          </a>
+        </td></tr>
+        <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
+          <p style="margin:0;font-size:12px;color:#aaa;">
+            You subscribed at EYEWEAR. Reply to unsubscribe at any time.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: email,
+      subject: "Welcome to EYEWEAR — you're on the list!",
+      html,
+    });
+  } catch {}
+}
+
 export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise<void> {
   if (!process.env.RESEND_API_KEY) return;
 
