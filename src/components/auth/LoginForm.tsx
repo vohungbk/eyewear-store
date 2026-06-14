@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { login } from "@/lib/actions/auth";
 import type { FormState } from "@/lib/validations/auth";
+import GoogleButton from "@/components/auth/GoogleButton";
 
 export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const [state, action, isPending] = useActionState<FormState, FormData>(
@@ -23,6 +24,17 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
           {state.message}
         </div>
       )}
+
+      <GoogleButton redirectTo={redirectTo} />
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-neutral-200" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-white px-3 text-xs text-neutral-400">or continue with email</span>
+        </div>
+      </div>
 
       <form action={action} className="space-y-4">
         {redirectTo && (

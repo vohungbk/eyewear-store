@@ -116,6 +116,21 @@ export async function forgotPassword(
   };
 }
 
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  const redirectTo = formData.get("redirectTo") as string | null;
+  const next = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/account";
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${next}`,
+    },
+  });
+
+  if (data.url) redirect(data.url);
+}
+
 export async function updateProfile(
   _prevState: FormState,
   formData: FormData
