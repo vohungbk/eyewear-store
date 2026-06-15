@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getProduct, getRelatedProducts } from "@/lib/data/products";
 import { getProductReviews } from "@/lib/data/reviews";
+import { getBundlesForProduct } from "@/lib/data/bundles";
 import ProductGallery from "@/components/ui/ProductGallery";
 import ProductDetail from "@/components/ui/ProductDetail";
 import ProductCard from "@/components/ui/ProductCard";
@@ -12,6 +13,7 @@ import ReviewForm from "@/components/ui/ReviewForm";
 import ViewContentTracker from "@/components/analytics/ViewContentTracker";
 import ProductViewTracker from "@/components/ui/ProductViewTracker";
 import RecentlyViewed from "@/components/ui/RecentlyViewed";
+import BundleSection from "@/components/ui/BundleSection";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -46,12 +48,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [related, reviewSummary, wishlistData] = await Promise.all([
+  const [related, reviewSummary, wishlistData, bundles] = await Promise.all([
     getRelatedProducts(product.id, product.category_id, 4),
     getProductReviews(product.id),
     user
       ? supabase.from("wishlists").select("id").eq("user_id", user.id).eq("product_id", product.id).single()
       : Promise.resolve({ data: null }),
+    getBundlesForProduct(product.id),
   ]);
 
   const isWishlisted = !!wishlistData.data;
@@ -141,6 +144,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Bundles / cross-sell */}
+      <BundleSection bundles={bundles} currentProductId={product.id} />
 
       {/* Reviews */}
       <div className="mt-16 border-t border-neutral-100 pt-12">

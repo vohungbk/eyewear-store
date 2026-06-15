@@ -239,6 +239,29 @@ export async function getAdminCustomers(page = 1, limit = 30) {
   return { customers: paginated, count };
 }
 
+export async function getAdminBundles() {
+  const client = db();
+  if (!client) return [] as AdminBundle[];
+  const { data } = await client
+    .from("bundles")
+    .select("id, name, description, discount_type, discount_value, is_active, created_at, bundle_items(product_id, products(name))")
+    .order("created_at", { ascending: false });
+  return (data ?? []) as unknown as AdminBundle[];
+}
+
+export async function getAdminBundle(id: string) {
+  const client = db();
+  if (!client) return null;
+  const { data } = await client
+    .from("bundles")
+    .select(
+      "id, name, description, discount_type, discount_value, is_active, bundle_items(id, product_id, quantity, position, products(id, name, slug, price, product_images(url, is_primary)))"
+    )
+    .eq("id", id)
+    .single();
+  return data as unknown as AdminBundleDetail | null;
+}
+
 export async function getAdminCustomer(userId: string) {
   const client = db();
   if (!client) return null;
@@ -471,6 +494,39 @@ export interface AdminCustomer {
   order_count: number;
   total_spend: number;
   last_order_at: string;
+}
+
+export interface AdminBundle {
+  id: string;
+  name: string;
+  description: string | null;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  is_active: boolean;
+  created_at: string;
+  bundle_items: { product_id: string; products: { name: string } | null }[];
+}
+
+export interface AdminBundleDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  is_active: boolean;
+  bundle_items: {
+    id: string;
+    product_id: string;
+    quantity: number;
+    position: number;
+    products: {
+      id: string;
+      name: string;
+      slug: string;
+      price: number;
+      product_images: { url: string; is_primary: boolean }[];
+    } | null;
+  }[];
 }
 
 export interface AdminCustomerOrder {

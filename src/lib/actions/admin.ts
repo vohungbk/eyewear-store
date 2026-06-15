@@ -307,6 +307,93 @@ export async function deleteCategory(id: string): Promise<{ error?: string }> {
   return {};
 }
 
+export async function createBundle(formData: FormData): Promise<{ error?: string }> {
+  try { await requireAdmin(); } catch { return { error: "Not authorized." }; }
+
+  const name = (formData.get("name") as string)?.trim();
+  if (!name) return { error: "Name is required." };
+
+  const db = serviceDb();
+  const { data: bundle, error } = await db
+    .from("bundles")
+    .insert({
+      name,
+      description: (formData.get("description") as string)?.trim() || null,
+      discount_type: formData.get("discount_type") as string,
+      discount_value: parseFloat(formData.get("discount_value") as string) || 0,
+      is_active: formData.get("is_active") === "true",
+    })
+    .select("id")
+    .single();
+
+  if (error || !bundle) return { error: "Failed to create bundle." };
+
+  const items = JSON.parse((formData.get("items") as string) || "[]") as { productId: string; quantity: number }[];
+  if (items.length > 0) {
+    await db.from("bundle_items").insert(
+      items.map((item, i) => ({
+        bundle_id: bundle.id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        position: i,
+      }))
+    );
+  }
+
+  revalidatePath("/admin/bundles");
+  redirect("/admin/bundles");
+}
+
+export async function updateBundle(id: string, formData: FormData): Promise<{ error?: string }> {
+  try { await requireAdmin(); } catch { return { error: "Not authorized." }; }
+
+  const name = (formData.get("name") as string)?.trim();
+  if (!name) return { error: "Name is required." };
+
+  const db = serviceDb();
+
+  const { error } = await db
+    .from("bundles")
+    .update({
+      name,
+      description: (formData.get("description") as string)?.trim() || null,
+      discount_type: formData.get("discount_type") as string,
+      discount_value: parseFloat(formData.get("discount_value") as string) || 0,
+      is_active: formData.get("is_active") === "true",
+    })
+    .eq("id", id);
+
+  if (error) return { error: "Failed to update bundle." };
+
+  // Replace items
+  await db.from("bundle_items").delete().eq("bundle_id", id);
+
+  const items = JSON.parse((formData.get("items") as string) || "[]") as { productId: string; quantity: number }[];
+  if (items.length > 0) {
+    await db.from("bundle_items").insert(
+      items.map((item, i) => ({
+        bundle_id: id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        position: i,
+      }))
+    );
+  }
+
+  revalidatePath("/admin/bundles");
+  revalidatePath(`/admin/bundles/${id}/edit`);
+  redirect("/admin/bundles");
+}
+
+export async function deleteBundle(id: string): Promise<{ error?: string }> {
+  try { await requireAdmin(); } catch { return { error: "Not authorized." }; }
+  const db = serviceDb();
+  const { error } = await db.from("bundles").delete().eq("id", id);
+  if (error) return { error: "Failed to delete bundle." };
+  revalidatePath("/admin/bundles");
+  return {};
+}
+
 export async function updateOrderStatus(
   orderId: string,
   status: string,
