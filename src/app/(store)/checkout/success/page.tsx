@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createAuthClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import CartClearer from "@/components/checkout/CartClearer";
 import PurchaseTracker from "@/components/analytics/PurchaseTracker";
@@ -41,11 +42,15 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
 
   const fbEventId = (pi.metadata?.fb_event_id as string) ?? "";
 
+  // Check if the current visitor is logged in
+  const authClient = await createAuthClient();
+  const { data: { user } } = await authClient.auth.getUser();
+
   const db = serviceClient();
   const { data: orderData } = db
     ? await db
         .from("orders")
-        .select("id, total, customer_name, status, order_items(product_id, quantity)")
+        .select("id, total, customer_name, customer_email, user_id, status, order_items(product_id, quantity)")
         .eq("stripe_payment_intent_id", payment_intent)
         .single()
     : { data: null };
@@ -53,9 +58,16 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
     id: string;
     total: number;
     customer_name: string;
+    customer_email: string;
+    user_id: string | null;
     status: string;
     order_items: { product_id: string; quantity: number }[];
   } | null;
+
+  const isGuestOrder = !order?.user_id;
+  const registerUrl = order?.customer_email
+    ? `/register?email=${encodeURIComponent(order.customer_email)}`
+    : "/register";
 
   return (
     <div className="mx-auto max-w-lg px-4 sm:px-6 py-16 text-center">
@@ -112,8 +124,31 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
         </div>
       )}
 
+      {/* Guest upsell: prompt to create account for order tracking */}
+      {isGuestOrder && !user && (
+        <div className="border border-neutral-200 rounded-lg p-5 mb-6 text-left bg-neutral-50">
+          <p className="text-sm font-semibold mb-1">Track your order anytime</p>
+          <p className="text-sm text-neutral-500 mb-3">
+            Create a free account to view order status, manage returns, and
+            check out faster next time.
+          </p>
+          <Link
+            href={registerUrl}
+            className="inline-block px-4 py-2 bg-black text-white text-sm font-semibold rounded-lg hover:bg-neutral-800 transition-colors"
+          >
+            Create account →
+          </Link>
+          <Link
+            href="/login"
+            className="inline-block ml-3 text-sm text-neutral-500 hover:text-black transition-colors"
+          >
+            Sign in
+          </Link>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        {order && (
+        {order && !isGuestOrder && (
           <Link
             href={`/account/orders/${order.id}`}
             className="px-6 py-2.5 bg-black text-white text-sm font-semibold rounded-lg hover:bg-neutral-800 transition-colors"
