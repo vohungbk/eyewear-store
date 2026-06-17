@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
   PaymentElement,
+  ExpressCheckoutElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import type {
+  StripeExpressCheckoutElementConfirmEvent,
+  StripeExpressCheckoutElementShippingAddressChangeEvent,
+  ShippingRate,
+} from "@stripe/stripe-js";
 import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/lib/utils/format";
 import type { CartItem } from "@/types/cart";
@@ -135,6 +141,146 @@ function PaymentStep({
         Payments secured by Stripe. We never store your card details.
       </p>
     </form>
+  );
+}
+
+// ─── ExpressCheckoutSection ───────────────────────────────────────────────────
+
+const ALLOWED_COUNTRIES = ["US", "CA", "GB", "AU", "VN"];
+
+function ExpressCheckoutSection({
+  items,
+  totals,
+  appliedCoupon,
+  onAvailabilityChange,
+}: {
+  items: CartItem[];
+  totals: ReturnType<typeof calcTotals>;
+  appliedCoupon: { code: string; discountAmount: number } | null;
+  onAvailabilityChange: (available: boolean) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState("");
+
+  // Keep Elements amount in sync when coupon changes (amount excludes shipping —
+  // shipping is passed as a separate rate so the payment sheet total stays correct)
+  useEffect(() => {
+    if (!elements) return;
+    elements.update({
+      amount: Math.round((totals.total - totals.shipping) * 100),
+    });
+  }, [elements, totals.total, totals.shipping]);
+
+  const shippingRate: ShippingRate =
+    totals.shipping === 0
+      ? { id: "free", displayName: "Free Shipping", amount: 0 }
+      : { id: "standard", displayName: "Standard Shipping (3–5 days)", amount: 999 };
+
+  async function handleConfirm(event: StripeExpressCheckoutElementConfirmEvent) {
+    if (!stripe || !elements) return;
+    setError("");
+
+    const { billingDetails, shippingAddress } = event;
+    const addr = shippingAddress?.address ?? billingDetails?.address;
+
+    const contact = {
+      email: billingDetails?.email ?? "",
+      full_name: billingDetails?.name ?? shippingAddress?.name ?? "",
+      phone: billingDetails?.phone ?? undefined,
+    };
+    const shipping = {
+      line1: addr?.line1 ?? "",
+      line2: addr?.line2 ?? undefined,
+      city: addr?.city ?? "",
+      state: addr?.state ?? "",
+      postal_code: addr?.postal_code ?? "",
+      country: addr?.country ?? "US",
+    };
+
+    try {
+      const res = await fetch("/api/stripe/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          contact,
+          shippingAddress: shipping,
+          totals,
+          discountCode: appliedCoupon?.code,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        event.paymentFailed({ reason: "fail" });
+        setError(data.error ?? "Failed to initialize payment.");
+        return;
+      }
+
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        clientSecret: data.clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout/success`,
+        },
+      });
+
+      if (confirmError) {
+        event.paymentFailed({ reason: "fail" });
+        setError(confirmError.message ?? "Payment failed. Please try again.");
+      }
+    } catch {
+      event.paymentFailed({ reason: "fail" });
+      setError("Something went wrong. Please try again.");
+    }
+  }
+
+  function handleShippingAddressChange(
+    event: StripeExpressCheckoutElementShippingAddressChangeEvent
+  ) {
+    if (!ALLOWED_COUNTRIES.includes(event.address.country)) {
+      event.reject();
+      return;
+    }
+    event.resolve({ shippingRates: [shippingRate] });
+  }
+
+  return (
+    <div>
+      <ExpressCheckoutElement
+        onReady={({ availablePaymentMethods }) => {
+          onAvailabilityChange(
+            !!availablePaymentMethods &&
+              Object.values(availablePaymentMethods).some(Boolean)
+          );
+        }}
+        onClick={({ resolve }) => resolve({ shippingRates: [shippingRate] })}
+        onShippingAddressChange={handleShippingAddressChange}
+        onConfirm={handleConfirm}
+        options={{
+          buttonHeight: 44,
+          emailRequired: true,
+          phoneNumberRequired: false,
+          shippingAddressRequired: true,
+          allowedShippingCountries: ALLOWED_COUNTRIES,
+          paymentMethods: {
+            applePay: "auto",
+            googlePay: "auto",
+            link: "never",
+            paypal: "never",
+            amazonPay: "never",
+            klarna: "never",
+          },
+          buttonType: { applePay: "buy", googlePay: "buy" },
+        }}
+      />
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-md mt-3">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -283,6 +429,7 @@ export default function CheckoutForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const [isExpressAvailable, setIsExpressAvailable] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -325,6 +472,19 @@ export default function CheckoutForm({
   }, [hydrated, items.length, router]);
 
   const totals = calcTotals(items, appliedCoupon?.discountAmount ?? 0);
+
+  // Stable options for express checkout Elements — amount excludes shipping
+  // (shipping is passed as a rate in onClick so the sheet total stays accurate)
+  const expressCheckoutOptions = useMemo(
+    () => ({
+      mode: "payment" as const,
+      amount: Math.round((totals.total - totals.shipping) * 100),
+      currency: "usd",
+      appearance: elementsAppearance,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [] // ExpressCheckoutSection syncs amount changes via elements.update()
+  );
 
   async function handleApplyCoupon() {
     if (!couponInput.trim()) return;
@@ -417,6 +577,29 @@ export default function CheckoutForm({
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
       {/* Form area */}
       <div className="lg:col-span-3 order-2 lg:order-1">
+        {/* Express checkout (Apple Pay / Google Pay) — only shown in details step */}
+        {step === "details" && (
+          <>
+            <Elements stripe={stripePromise} options={expressCheckoutOptions}>
+              <ExpressCheckoutSection
+                items={items}
+                totals={totals}
+                appliedCoupon={appliedCoupon}
+                onAvailabilityChange={setIsExpressAvailable}
+              />
+            </Elements>
+            {isExpressAvailable && (
+              <div className="relative my-6 flex items-center gap-3">
+                <div className="flex-1 border-t border-neutral-200" />
+                <span className="text-xs text-neutral-400 shrink-0">
+                  or pay with card
+                </span>
+                <div className="flex-1 border-t border-neutral-200" />
+              </div>
+            )}
+          </>
+        )}
+
         {step === "details" ? (
           <form onSubmit={handleDetailsSubmit} className="space-y-8">
             {/* Contact */}
