@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useCartItemCount, useCartStore } from "@/store/cartStore";
+import SearchAutocomplete from "@/components/layout/SearchAutocomplete";
 
 const NAV_LINKS = [
   { href: "/products", label: "All Eyewear" },
@@ -50,26 +51,7 @@ export default function Header() {
           {/* Right actions */}
           <div className="flex items-center gap-3">
             {/* Search */}
-            <Link
-              href="/search"
-              aria-label="Search"
-              className="p-2 text-neutral-500 hover:text-black transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-            </Link>
+            <SearchAutocomplete />
 
             {/* Account */}
             <Link
