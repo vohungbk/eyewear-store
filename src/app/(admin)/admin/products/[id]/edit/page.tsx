@@ -5,6 +5,7 @@ import { getAdminProduct } from "@/lib/data/admin";
 import { getCategories } from "@/lib/data/categories";
 import ProductForm from "@/components/admin/ProductForm";
 import ProductImageManager from "@/components/admin/ProductImageManager";
+import VariantStockEditor from "@/components/admin/VariantStockEditor";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -49,27 +50,15 @@ export default async function EditProductPage({ params }: Props) {
             images={product.product_images}
           />
 
-          {/* Variants summary */}
+          {/* Variant stock editor */}
           {product.product_variants.length > 0 && (
             <div className="mt-8">
               <h2 className="text-sm font-semibold text-neutral-700 mb-3">
-                Variants ({product.product_variants.length})
+                Stock ({product.product_variants.length} variants)
               </h2>
-              <ul className="space-y-2">
-                {product.product_variants.map((v) => (
-                  <li
-                    key={v.id}
-                    className="flex items-center justify-between text-sm border border-neutral-100 rounded-md px-3 py-2"
-                  >
-                    <span>{v.name}</span>
-                    <span className="text-neutral-500">
-                      Stock: {v.stock_quantity}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <VariantStockEditor variants={product.product_variants} />
               <p className="text-xs text-neutral-400 mt-2">
-                Manage variants via Supabase dashboard.
+                Waitlist subscribers are emailed automatically when stock is restored from zero.
               </p>
             </div>
           )}

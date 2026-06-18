@@ -6,7 +6,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { ProductSchema, type ProductFormValues, CategorySchema, type CategoryFormValues } from "@/lib/validations/admin";
 import type { FormState } from "@/lib/validations/auth";
-import { sendShippedEmail } from "@/lib/email";
+import { sendShippedEmail, sendBackInStockEmail } from "@/lib/email";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serviceDb(): any {
@@ -441,5 +441,87 @@ export async function updateOrderStatus(
 
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");
+  return {};
+}
+
+// ─── Variant stock ────────────────────────────────────────────────────────────
+
+export async function updateVariantStock(
+  variantId: string,
+  newQuantity: number
+): Promise<{ error?: string }> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { error: "Not authorized." };
+  }
+
+  if (!Number.isInteger(newQuantity) || newQuantity < 0) {
+    return { error: "Quantity must be a non-negative integer." };
+  }
+
+  const db = serviceDb();
+
+  // Fetch current state + product info for email
+  const { data: variantData } = await db
+    .from("product_variants")
+    .select("stock_quantity, product_id, name, products(name, slug, price, product_images(url, is_primary))")
+    .eq("id", variantId)
+    .single();
+
+  if (!variantData) return { error: "Variant not found." };
+
+  const wasOutOfStock = variantData.stock_quantity === 0;
+  const nowInStock = newQuantity > 0;
+
+  const { error } = await db
+    .from("product_variants")
+    .update({ stock_quantity: newQuantity })
+    .eq("id", variantId);
+
+  if (error) return { error: "Failed to update stock." };
+
+  // Notify waitlist when restocked from zero
+  if (wasOutOfStock && nowInStock) {
+    const { data: waitlist } = await db
+      .from("stock_waitlist")
+      .select("id, email")
+      .eq("variant_id", variantId);
+
+    if (waitlist && waitlist.length > 0) {
+      const product = variantData.products as {
+        name: string;
+        slug: string;
+        price: number;
+        product_images: { url: string; is_primary: boolean }[];
+      } | null;
+
+      const images: { url: string; is_primary: boolean }[] = product?.product_images ?? [];
+      const primaryImage =
+        images.find((i: { url: string; is_primary: boolean }) => i.is_primary) ?? images[0] ?? null;
+
+      const ids = waitlist.map((w: { id: string }) => w.id);
+
+      await Promise.allSettled(
+        waitlist.map((w: { email: string }) =>
+          sendBackInStockEmail({
+            email: w.email,
+            productName: product?.name ?? "",
+            variantName: variantData.name,
+            productSlug: product?.slug ?? "",
+            productImageUrl: primaryImage?.url ?? null,
+            price: product?.price ?? 0,
+          })
+        )
+      );
+
+      // Remove notified entries
+      await db.from("stock_waitlist").delete().in("id", ids);
+    }
+  }
+
+  const product = variantData.products as { slug: string } | null;
+  if (product?.slug) revalidateTag(`product-${product.slug}`, "hours");
+  revalidatePath(`/admin/products/${variantData.product_id}/edit`);
   return {};
 }

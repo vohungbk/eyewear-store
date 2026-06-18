@@ -412,6 +412,29 @@ export type Database = {
           created_at?: string;
         };
       };
+      stock_waitlist: {
+        Row: {
+          id: string;
+          email: string;
+          product_id: string;
+          variant_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          product_id: string;
+          variant_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          product_id?: string;
+          variant_id?: string;
+          created_at?: string;
+        };
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };

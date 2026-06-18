@@ -332,6 +332,81 @@ export async function sendNewsletterWelcomeEmail(email: string, name?: string | 
   } catch {}
 }
 
+export async function sendBackInStockEmail(data: {
+  email: string;
+  productName: string;
+  variantName: string;
+  productSlug: string;
+  productImageUrl: string | null;
+  price: number;
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const productUrl = `${SITE_URL}/products/${data.productSlug}`;
+
+  const imgBlock = data.productImageUrl
+    ? `<td style="width:80px;vertical-align:top;padding-right:16px;">
+        <img src="${data.productImageUrl}" alt="${data.productName}" width="80" height="80"
+          style="border-radius:8px;object-fit:cover;display:block;" />
+      </td>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>Back in Stock</title></head>
+<body style="margin:0;padding:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f6f6f6;padding:32px 0;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="580"
+        style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
+        <tr><td style="background:#000;padding:24px 32px;">
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+        </td></tr>
+        <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #f0f0f0;">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111;">It's back in stock!</p>
+          <p style="margin:0;font-size:14px;color:#666;line-height:1.6;">
+            Good news — an item on your waitlist is available again.
+          </p>
+        </td></tr>
+        <tr><td style="padding:24px 32px;">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              ${imgBlock}
+              <td style="vertical-align:top;">
+                <p style="margin:0;font-size:16px;font-weight:700;color:#111;">${data.productName}</p>
+                <p style="margin:4px 0 0;font-size:13px;color:#666;">${data.variantName}</p>
+                <p style="margin:8px 0 0;font-size:15px;font-weight:600;color:#111;">${fmt(data.price)}</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 32px 32px;">
+          <a href="${productUrl}"
+            style="display:inline-block;background:#000;color:#fff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:6px;text-decoration:none;">
+            Shop Now — Before It Sells Out
+          </a>
+        </td></tr>
+        <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
+          <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
+            You requested a back-in-stock alert at EYEWEAR.<br />
+            <a href="${SITE_URL}" style="color:#aaa;">Unsubscribe</a> from future alerts.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: data.email,
+      subject: `${data.productName} is back in stock!`,
+      html,
+    });
+  } catch {}
+}
+
 export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise<void> {
   if (!process.env.RESEND_API_KEY) return;
 

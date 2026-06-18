@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import VariantSelector from "./VariantSelector";
+import StockWaitlistForm from "./StockWaitlistForm";
 import type { ProductWithVariants, ProductVariant } from "@/types/database";
 import { formatPrice, getPrimaryImage } from "@/lib/utils/format";
 
@@ -94,6 +95,15 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             ? `Only ${selectedVariant.stock_quantity} left in stock`
             : "In stock — ships within 2-3 days"}
         </p>
+      )}
+
+      {/* Waitlist form when out of stock */}
+      {outOfStock && selectedVariant && (
+        <StockWaitlistForm
+          productId={product.id}
+          variantId={selectedVariant.id}
+          variantName={selectedVariant.name}
+        />
       )}
     </div>
   );
