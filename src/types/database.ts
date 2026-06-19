@@ -435,6 +435,44 @@ export type Database = {
           created_at?: string;
         };
       };
+      abandoned_carts: {
+        Row: {
+          id: string;
+          email: string;
+          name: string | null;
+          cart_items: Json;
+          cart_total: number;
+          token: string;
+          email_sent_at: string | null;
+          recovered_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          name?: string | null;
+          cart_items?: Json;
+          cart_total?: number;
+          token?: string;
+          email_sent_at?: string | null;
+          recovered_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          name?: string | null;
+          cart_items?: Json;
+          cart_total?: number;
+          token?: string;
+          email_sent_at?: string | null;
+          recovered_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -466,6 +504,7 @@ export type DiscountCode = Database["public"]["Tables"]["discount_codes"]["Row"]
 export type Wishlist = Database["public"]["Tables"]["wishlists"]["Row"];
 export type Review = Database["public"]["Tables"]["reviews"]["Row"];
 export type NewsletterSubscriber = Database["public"]["Tables"]["newsletter_subscribers"]["Row"];
+export type AbandonedCart = Database["public"]["Tables"]["abandoned_carts"]["Row"];
 
 // Extended types with relations
 export type ProductWithImages = Product & {

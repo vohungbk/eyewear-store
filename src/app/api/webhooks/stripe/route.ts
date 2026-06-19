@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { sendCAPIEvent } from "@/lib/facebook/capi";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { markCartRecovered } from "@/lib/actions/abandonedCart";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serviceClient(): any {
@@ -70,6 +71,9 @@ export async function POST(request: Request) {
           const items = (order.order_items ?? []) as RawItem[];
 
           await Promise.all([
+            // Mark abandoned cart as recovered
+            markCartRecovered(order.customer_email),
+
             // Facebook CAPI Purchase
             fbEventId
               ? sendCAPIEvent({

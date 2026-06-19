@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import type { CartItem } from "@/types/cart";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -405,6 +406,124 @@ export async function sendBackInStockEmail(data: {
       html,
     });
   } catch {}
+}
+
+export async function sendAbandonedCartEmail(data: {
+  email: string;
+  name: string | null;
+  items: CartItem[];
+  total: number;
+  token: string;
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const recoveryUrl = `${SITE_URL}/checkout/recover/${data.token}`;
+  const firstName = data.name ? data.name.split(" ")[0] : null;
+
+  const itemsHtml = data.items
+    .map((item) => {
+      const img = item.imageUrl;
+      return `
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;vertical-align:top;">
+            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                ${img ? `
+                <td style="width:56px;vertical-align:top;padding-right:12px;">
+                  <img src="${img}" alt="${item.name}" width="56" height="56"
+                    style="border-radius:6px;object-fit:cover;display:block;" />
+                </td>` : ""}
+                <td style="vertical-align:top;">
+                  <p style="margin:0;font-size:14px;font-weight:600;color:#111;">${item.name}</p>
+                  <p style="margin:2px 0 0;font-size:12px;color:#888;">${item.variantName} &nbsp;·&nbsp; Qty: ${item.quantity}</p>
+                </td>
+                <td style="vertical-align:top;text-align:right;white-space:nowrap;">
+                  <p style="margin:0;font-size:14px;font-weight:600;color:#111;">
+                    $${(item.price * item.quantity).toFixed(2)}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`;
+    })
+    .join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>You left something behind</title></head>
+<body style="margin:0;padding:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f6f6f6;padding:32px 0;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="580"
+        style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:#000;padding:24px 32px;">
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+        </td></tr>
+
+        <!-- Hero -->
+        <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #f0f0f0;">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111;">
+            ${firstName ? `${firstName}, you` : "You"} left something behind
+          </p>
+          <p style="margin:0;font-size:14px;color:#666;line-height:1.6;">
+            Your cart is saved and ready for you. Complete your order before your items sell out.
+          </p>
+        </td></tr>
+
+        <!-- Items -->
+        <tr><td style="padding:24px 32px 0;">
+          <p style="margin:0 0 12px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#888;">
+            Your cart
+          </p>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            ${itemsHtml}
+          </table>
+        </td></tr>
+
+        <!-- Total -->
+        <tr><td style="padding:16px 32px 0;">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td style="font-size:15px;font-weight:700;color:#111;border-top:2px solid #111;padding-top:12px;">
+                Total
+              </td>
+              <td style="font-size:15px;font-weight:700;color:#111;border-top:2px solid #111;padding-top:12px;text-align:right;">
+                $${data.total.toFixed(2)}
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- CTA -->
+        <tr><td style="padding:32px;">
+          <a href="${recoveryUrl}"
+            style="display:inline-block;background:#000;color:#fff;font-size:14px;font-weight:600;padding:14px 32px;border-radius:6px;text-decoration:none;">
+            Complete My Order →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
+          <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
+            You started checkout at EYEWEAR. If you didn't, you can safely ignore this email.<br />
+            <a href="${SITE_URL}" style="color:#aaa;">Visit our store</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  await getResend().emails.send({
+    from: FROM,
+    to: data.email,
+    subject: "You left something in your cart",
+    html,
+  });
 }
 
 export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise<void> {

@@ -19,6 +19,7 @@ import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/lib/utils/format";
 import type { CartItem } from "@/types/cart";
 import { initiateCheckout } from "@/lib/facebook/pixel";
+import { upsertAbandonedCart } from "@/lib/actions/abandonedCart";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -380,6 +381,7 @@ function Field({
   type = "text",
   value,
   onChange,
+  onBlur,
   required,
   autoComplete,
 }: {
@@ -388,6 +390,7 @@ function Field({
   type?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: () => void;
   required?: boolean;
   autoComplete?: string;
 }) {
@@ -402,6 +405,7 @@ function Field({
         type={type}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         required={required}
         autoComplete={autoComplete}
         className="w-full border border-neutral-200 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-black"
@@ -516,10 +520,20 @@ export default function CheckoutForm({
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
 
+  function handleEmailBlur() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return;
+    if (items.length === 0) return;
+    const total = calcTotals(items, appliedCoupon?.discountAmount ?? 0).total;
+    upsertAbandonedCart({ email: form.email, name: form.full_name, items, total }).catch(() => {});
+  }
+
   async function handleDetailsSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
+
+    // Capture abandoned cart — user reached the payment step but may not complete
+    upsertAbandonedCart({ email: form.email, name: form.full_name, items, total: totals.total }).catch(() => {});
 
     try {
       const res = await fetch("/api/stripe/create-payment-intent", {
@@ -612,6 +626,7 @@ export default function CheckoutForm({
                   type="email"
                   value={form.email}
                   onChange={handleChange}
+                  onBlur={handleEmailBlur}
                   required
                   autoComplete="email"
                 />

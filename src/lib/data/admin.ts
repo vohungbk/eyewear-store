@@ -378,6 +378,28 @@ export async function getAnalytics(days = 30): Promise<AnalyticsData> {
   return { revenueByDay, ordersByStatus, topProducts, aov, totalRevenue, totalOrders: paidOrders.length, newCustomersCount, returningCustomersCount, period: days };
 }
 
+export async function getAbandonedCarts(filter: "all" | "pending" | "sent" | "recovered" = "all", page = 1, limit = 30) {
+  const client = db();
+  if (!client) return { carts: [] as AdminAbandonedCart[], count: 0 };
+
+  let query = client
+    .from("abandoned_carts")
+    .select("id, email, name, cart_items, cart_total, token, email_sent_at, recovered_at, created_at", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range((page - 1) * limit, page * limit - 1);
+
+  if (filter === "pending") {
+    query = query.is("email_sent_at", null).is("recovered_at", null);
+  } else if (filter === "sent") {
+    query = query.not("email_sent_at", "is", null).is("recovered_at", null);
+  } else if (filter === "recovered") {
+    query = query.not("recovered_at", "is", null);
+  }
+
+  const { data, count } = await query;
+  return { carts: (data ?? []) as AdminAbandonedCart[], count: count ?? 0 };
+}
+
 // ─── Local types ─────────────────────────────────────────────────────────────
 
 export interface AdminProduct {
@@ -537,6 +559,18 @@ export interface AdminCustomerOrder {
   customer_email: string;
   customer_name: string;
   discount_code: string | null;
+}
+
+export interface AdminAbandonedCart {
+  id: string;
+  email: string;
+  name: string | null;
+  cart_items: unknown[];
+  cart_total: number;
+  token: string;
+  email_sent_at: string | null;
+  recovered_at: string | null;
+  created_at: string;
 }
 
 export interface AdminOrderDetail {
