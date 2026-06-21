@@ -408,6 +408,103 @@ export async function sendBackInStockEmail(data: {
   } catch {}
 }
 
+export async function sendGiftCardEmail(data: {
+  recipientEmail: string;
+  recipientName: string | null;
+  senderName: string | null;
+  message: string | null;
+  code: string;
+  value: number;
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const { value } = data;
+  const shopUrl = `${SITE_URL}/products`;
+  const greeting = data.recipientName ? `Hi ${data.recipientName},` : "Hi there,";
+  const from = data.senderName ?? "Someone special";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>You've received a Gift Card</title></head>
+<body style="margin:0;padding:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f6f6f6;padding:32px 0;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="580"
+        style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:#000;padding:24px 32px;">
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+        </td></tr>
+
+        <!-- Hero -->
+        <tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #f0f0f0;">
+          <p style="margin:0 0 4px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#888;">
+            Gift Card
+          </p>
+          <p style="margin:0 0 8px;font-size:36px;font-weight:800;color:#111;">
+            ${fmt(value)}
+          </p>
+          <p style="margin:0;font-size:14px;color:#666;">
+            ${greeting}<br/>
+            <strong>${from}</strong> sent you a gift card for EYEWEAR.
+          </p>
+        </td></tr>
+
+        ${data.message ? `
+        <!-- Personal message -->
+        <tr><td style="padding:24px 32px;background:#fafafa;border-bottom:1px solid #f0f0f0;">
+          <p style="margin:0 0 6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#888;">
+            Personal message
+          </p>
+          <p style="margin:0;font-size:14px;color:#333;line-height:1.6;font-style:italic;">
+            "${data.message}"
+          </p>
+        </td></tr>` : ""}
+
+        <!-- Gift card code -->
+        <tr><td style="padding:32px;text-align:center;">
+          <p style="margin:0 0 12px;font-size:13px;color:#888;">Your gift card code</p>
+          <div style="display:inline-block;background:#f4f4f4;border:2px dashed #ccc;border-radius:8px;padding:16px 32px;">
+            <p style="margin:0;font-size:24px;font-weight:700;letter-spacing:0.2em;font-family:monospace;color:#111;">
+              ${data.code}
+            </p>
+          </div>
+          <p style="margin:12px 0 0;font-size:12px;color:#aaa;">
+            Enter this code at checkout to redeem your gift card.
+          </p>
+        </td></tr>
+
+        <!-- CTA -->
+        <tr><td style="padding:0 32px 32px;text-align:center;">
+          <a href="${shopUrl}"
+            style="display:inline-block;background:#000;color:#fff;font-size:14px;font-weight:600;padding:14px 32px;border-radius:6px;text-decoration:none;">
+            Shop Now →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
+          <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
+            This gift card was purchased at EYEWEAR. No expiry date.<br />
+            Questions? Reply to this email and we'll help.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  const subject = data.senderName
+    ? `${data.senderName} sent you a ${fmt(value)} EYEWEAR gift card!`
+    : `You've received a ${fmt(value)} EYEWEAR gift card!`;
+
+  try {
+    await getResend().emails.send({ from: FROM, to: data.recipientEmail, subject, html });
+  } catch {}
+}
+
 export async function sendAbandonedCartEmail(data: {
   email: string;
   name: string | null;

@@ -42,14 +42,16 @@ const elementsAppearance = {
   },
 };
 
-function calcTotals(items: CartItem[], discountAmount = 0) {
+function calcTotals(items: CartItem[], discountAmount = 0, giftCardCredit = 0) {
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const discount = Math.min(discountAmount, subtotal);
   const discounted = subtotal - discount;
   const shipping = discounted >= 100 ? 0 : 9.99;
   const tax = parseFloat((discounted * 0.08).toFixed(2));
-  const total = parseFloat((discounted + shipping + tax).toFixed(2));
-  return { subtotal, discount, shipping, tax, total };
+  const beforeGiftCard = parseFloat((discounted + shipping + tax).toFixed(2));
+  const giftCard = Math.min(giftCardCredit, beforeGiftCard);
+  const total = parseFloat(Math.max(0, beforeGiftCard - giftCard).toFixed(2));
+  return { subtotal, discount, shipping, tax, giftCard, total };
 }
 
 interface FormValues {
@@ -291,10 +293,12 @@ function OrderSummary({
   items,
   totals,
   couponCode,
+  giftCardCode,
 }: {
   items: CartItem[];
   totals: ReturnType<typeof calcTotals>;
   couponCode?: string;
+  giftCardCode?: string;
 }) {
   return (
     <div className="border border-neutral-200 rounded-lg p-6 sticky top-24">
@@ -358,9 +362,22 @@ function OrderSummary({
           <dt className="text-neutral-500">Tax (8%)</dt>
           <dd>{formatPrice(totals.tax)}</dd>
         </div>
+        {totals.giftCard > 0 && (
+          <div className="flex justify-between text-green-600">
+            <dt>
+              Gift card
+              {giftCardCode && (
+                <span className="ml-1 text-[10px] font-mono bg-green-50 px-1.5 py-0.5 rounded">
+                  {giftCardCode}
+                </span>
+              )}
+            </dt>
+            <dd>-{formatPrice(totals.giftCard)}</dd>
+          </div>
+        )}
         <div className="flex justify-between font-semibold text-base border-t border-neutral-200 pt-2 mt-1">
           <dt>Total</dt>
-          <dd>{formatPrice(totals.total)}</dd>
+          <dd>{totals.total === 0 ? <span className="text-green-600">Free</span> : formatPrice(totals.total)}</dd>
         </div>
       </dl>
 
@@ -442,6 +459,14 @@ export default function CheckoutForm({
     discountAmount: number;
   } | null>(null);
 
+  const [giftCardInput, setGiftCardInput] = useState("");
+  const [giftCardError, setGiftCardError] = useState("");
+  const [isApplyingGiftCard, setIsApplyingGiftCard] = useState(false);
+  const [appliedGiftCard, setAppliedGiftCard] = useState<{
+    code: string;
+    balance: number;
+  } | null>(null);
+
   const [form, setForm] = useState<FormValues>({
     email: defaultEmail,
     full_name: defaultName,
@@ -475,7 +500,12 @@ export default function CheckoutForm({
     }
   }, [hydrated, items.length, router]);
 
-  const totals = calcTotals(items, appliedCoupon?.discountAmount ?? 0);
+  // Compute gift card credit against the pre-gift-card total
+  const preTotals = calcTotals(items, appliedCoupon?.discountAmount ?? 0);
+  const giftCardCredit = appliedGiftCard
+    ? Math.min(appliedGiftCard.balance, preTotals.total)
+    : 0;
+  const totals = calcTotals(items, appliedCoupon?.discountAmount ?? 0, giftCardCredit);
 
   // Stable options for express checkout Elements — amount excludes shipping
   // (shipping is passed as a rate in onClick so the sheet total stays accurate)
@@ -520,6 +550,30 @@ export default function CheckoutForm({
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
 
+  async function handleApplyGiftCard() {
+    if (!giftCardInput.trim()) return;
+    setIsApplyingGiftCard(true);
+    setGiftCardError("");
+    try {
+      const res = await fetch("/api/gift-cards/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: giftCardInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedGiftCard({ code: giftCardInput.trim().toUpperCase(), balance: data.balance });
+        setGiftCardInput("");
+      } else {
+        setGiftCardError(data.message ?? "Invalid gift card.");
+      }
+    } catch {
+      setGiftCardError("Failed to apply gift card. Please try again.");
+    } finally {
+      setIsApplyingGiftCard(false);
+    }
+  }
+
   function handleEmailBlur() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return;
     if (items.length === 0) return;
@@ -535,27 +589,48 @@ export default function CheckoutForm({
     // Capture abandoned cart — user reached the payment step but may not complete
     upsertAbandonedCart({ email: form.email, name: form.full_name, items, total: totals.total }).catch(() => {});
 
+    const contact = { email: form.email, full_name: form.full_name, phone: form.phone || undefined };
+    const shippingAddress = {
+      line1: form.line1,
+      line2: form.line2 || undefined,
+      city: form.city,
+      state: form.state,
+      postal_code: form.postal_code,
+      country: form.country,
+    };
+
     try {
+      // Gift card covers the full order — skip Stripe entirely
+      if (totals.total === 0 && appliedGiftCard) {
+        const res = await fetch("/api/orders/create-free", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items,
+            contact,
+            shippingAddress,
+            totals: { ...totals, giftCardCredit: giftCardCredit },
+            discountCode: appliedCoupon?.code,
+            giftCardCode: appliedGiftCard.code,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Failed to place order");
+        router.push(`/checkout/success?order_id=${data.orderId}`);
+        return;
+      }
+
+      // Normal Stripe flow (may include partial gift card credit)
       const res = await fetch("/api/stripe/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items,
-          contact: {
-            email: form.email,
-            full_name: form.full_name,
-            phone: form.phone || undefined,
-          },
-          shippingAddress: {
-            line1: form.line1,
-            line2: form.line2 || undefined,
-            city: form.city,
-            state: form.state,
-            postal_code: form.postal_code,
-            country: form.country,
-          },
-          totals,
+          contact,
+          shippingAddress,
+          totals: { ...totals, giftCardCredit: giftCardCredit },
           discountCode: appliedCoupon?.code,
+          giftCardCode: appliedGiftCard?.code,
         }),
       });
 
@@ -772,6 +847,53 @@ export default function CheckoutForm({
               )}
             </section>
 
+            {/* Gift Card */}
+            <section>
+              <h2 className="text-base font-semibold mb-4">Gift Card</h2>
+              {appliedGiftCard ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-md px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 text-sm">✓</span>
+                    <span className="text-sm font-mono font-semibold text-green-700">
+                      {appliedGiftCard.code}
+                    </span>
+                    <span className="text-sm text-green-600">
+                      — {formatPrice(appliedGiftCard.balance)} available
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAppliedGiftCard(null)}
+                    className="text-xs text-neutral-400 hover:text-red-500 transition-colors ml-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={giftCardInput}
+                    onChange={(e) => { setGiftCardInput(e.target.value); setGiftCardError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyGiftCard())}
+                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                    className="flex-1 border border-neutral-200 rounded-md px-3 py-2.5 text-sm uppercase tracking-wider focus:outline-none focus:border-black font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyGiftCard}
+                    disabled={isApplyingGiftCard || !giftCardInput.trim()}
+                    className="px-4 py-2.5 border border-neutral-300 rounded-md text-sm font-medium hover:border-black transition-colors disabled:opacity-50"
+                  >
+                    {isApplyingGiftCard ? "…" : "Apply"}
+                  </button>
+                </div>
+              )}
+              {giftCardError && (
+                <p className="text-xs text-red-600 mt-1.5">{giftCardError}</p>
+              )}
+            </section>
+
             {error && (
               <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-md">
                 {error}
@@ -803,7 +925,7 @@ export default function CheckoutForm({
 
       {/* Order summary — shown first on mobile */}
       <div className="lg:col-span-2 order-1 lg:order-2">
-        <OrderSummary items={items} totals={totals} couponCode={appliedCoupon?.code} />
+        <OrderSummary items={items} totals={totals} couponCode={appliedCoupon?.code} giftCardCode={appliedGiftCard?.code} />
       </div>
     </div>
   );

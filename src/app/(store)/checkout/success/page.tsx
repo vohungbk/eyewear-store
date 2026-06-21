@@ -14,6 +14,7 @@ interface Props {
   searchParams: Promise<{
     payment_intent?: string;
     redirect_status?: string;
+    order_id?: string;   // set for gift-card-fully-covered free orders
   }>;
 }
 
@@ -27,7 +28,59 @@ function serviceClient(): any {
 }
 
 export default async function CheckoutSuccessPage({ searchParams }: Props) {
-  const { payment_intent, redirect_status } = await searchParams;
+  const { payment_intent, redirect_status, order_id } = await searchParams;
+
+  // Free order path (gift card covered everything — no Stripe PI)
+  if (order_id && !payment_intent) {
+    const authClient = await createAuthClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    const db = serviceClient();
+    const { data: orderData } = db
+      ? await db
+          .from("orders")
+          .select("id, total, customer_name, customer_email, user_id, status")
+          .eq("id", order_id)
+          .eq("status", "paid")
+          .single()
+      : { data: null };
+
+    const order = orderData as { id: string; total: number; customer_name: string; customer_email: string; user_id: string | null; status: string } | null;
+    const isGuest = !order?.user_id;
+    const registerUrl = order?.customer_email ? `/register?email=${encodeURIComponent(order.customer_email)}` : "/register";
+
+    return (
+      <div className="mx-auto max-w-lg px-4 sm:px-6 py-16 text-center">
+        <CartClearer />
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold mb-2">Order Confirmed!</h1>
+        <p className="text-neutral-500 mb-8">Paid in full with your gift card. We&apos;ll process your order shortly.</p>
+        {order && (
+          <div className="border border-neutral-200 rounded-lg p-5 mb-8 text-left space-y-3">
+            <div>
+              <p className="text-xs text-neutral-500 mb-0.5">Order number</p>
+              <p className="font-mono font-semibold">#{order.id.slice(0, 8).toUpperCase()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500 mb-0.5">Total charged</p>
+              <p className="font-semibold text-green-600">$0.00 (Gift card)</p>
+            </div>
+          </div>
+        )}
+        {isGuest && !user && (
+          <div className="border border-neutral-200 rounded-lg p-5 mb-6 text-left bg-neutral-50">
+            <p className="text-sm font-semibold mb-1">Track your order anytime</p>
+            <p className="text-sm text-neutral-500 mb-3">Create a free account to view order status and check out faster next time.</p>
+            <Link href={registerUrl} className="inline-block px-4 py-2 bg-black text-white text-sm font-semibold rounded-lg hover:bg-neutral-800 transition-colors">Create account →</Link>
+          </div>
+        )}
+        <Link href="/products" className="px-6 py-2.5 bg-black text-white text-sm font-semibold rounded-lg hover:bg-neutral-800 transition-colors">Continue Shopping</Link>
+      </div>
+    );
+  }
 
   if (!payment_intent || redirect_status !== "succeeded") {
     redirect("/checkout");

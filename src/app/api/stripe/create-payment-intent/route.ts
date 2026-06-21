@@ -27,11 +27,15 @@ export async function POST(request: Request) {
         postal_code: string;
         country: string;
       };
-      totals: { subtotal: number; discount: number; shipping: number; tax: number; total: number };
+      totals: {
+        subtotal: number; discount: number; shipping: number; tax: number;
+        giftCardCredit?: number; total: number;
+      };
       discountCode?: string;
+      giftCardCode?: string;
     };
 
-    const { items, contact, shippingAddress, totals, discountCode } = body;
+    const { items, contact, shippingAddress, totals, discountCode, giftCardCode } = body;
 
     if (!items?.length) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
@@ -67,6 +71,8 @@ export async function POST(request: Request) {
         shipping: totals.shipping,
         tax: totals.tax,
         total: totals.total,
+        gift_card_code: giftCardCode ?? null,
+        gift_card_credit: totals.giftCardCredit ?? 0,
         stripe_payment_intent_id: paymentIntent.id,
         shipping_address: shippingAddress as unknown as Json,
         customer_email: contact.email,

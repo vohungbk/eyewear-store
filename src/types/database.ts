@@ -202,6 +202,8 @@ export type Database = {
           customer_name: string;
           tracking_number: string | null;
           shipping_carrier: string | null;
+          gift_card_code: string | null;
+          gift_card_credit: number;
           created_at: string;
         };
         Insert: {
@@ -227,6 +229,8 @@ export type Database = {
           customer_name: string;
           tracking_number?: string | null;
           shipping_carrier?: string | null;
+          gift_card_code?: string | null;
+          gift_card_credit?: number;
           created_at?: string;
         };
         Update: {
@@ -252,6 +256,8 @@ export type Database = {
           customer_name?: string;
           tracking_number?: string | null;
           shipping_carrier?: string | null;
+          gift_card_code?: string | null;
+          gift_card_credit?: number;
           created_at?: string;
         };
       };
@@ -435,6 +441,76 @@ export type Database = {
           created_at?: string;
         };
       };
+      gift_cards: {
+        Row: {
+          id: string;
+          code: string;
+          initial_value: number;
+          balance: number;
+          recipient_email: string;
+          recipient_name: string | null;
+          sender_name: string | null;
+          message: string | null;
+          stripe_payment_intent_id: string | null;
+          is_active: boolean;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          initial_value: number;
+          balance: number;
+          recipient_email: string;
+          recipient_name?: string | null;
+          sender_name?: string | null;
+          message?: string | null;
+          stripe_payment_intent_id?: string | null;
+          is_active?: boolean;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          initial_value?: number;
+          balance?: number;
+          recipient_email?: string;
+          recipient_name?: string | null;
+          sender_name?: string | null;
+          message?: string | null;
+          stripe_payment_intent_id?: string | null;
+          is_active?: boolean;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      gift_card_redemptions: {
+        Row: {
+          id: string;
+          gift_card_id: string;
+          order_id: string | null;
+          amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          gift_card_id: string;
+          order_id?: string | null;
+          amount: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          gift_card_id?: string;
+          order_id?: string | null;
+          amount?: number;
+          created_at?: string;
+        };
+      };
       abandoned_carts: {
         Row: {
           id: string;
@@ -505,6 +581,8 @@ export type Wishlist = Database["public"]["Tables"]["wishlists"]["Row"];
 export type Review = Database["public"]["Tables"]["reviews"]["Row"];
 export type NewsletterSubscriber = Database["public"]["Tables"]["newsletter_subscribers"]["Row"];
 export type AbandonedCart = Database["public"]["Tables"]["abandoned_carts"]["Row"];
+export type GiftCard = Database["public"]["Tables"]["gift_cards"]["Row"];
+export type GiftCardRedemption = Database["public"]["Tables"]["gift_card_redemptions"]["Row"];
 
 // Extended types with relations
 export type ProductWithImages = Product & {

@@ -21,6 +21,7 @@ const FOOTER_LINKS = {
     { href: "/pages/about", label: "About Us" },
     { href: "/pages/privacy", label: "Privacy Policy" },
     { href: "/pages/terms", label: "Terms of Service" },
+    { href: "/gift-cards", label: "Gift Cards" },
   ],
 };
 

@@ -378,6 +378,28 @@ export async function getAnalytics(days = 30): Promise<AnalyticsData> {
   return { revenueByDay, ordersByStatus, topProducts, aov, totalRevenue, totalOrders: paidOrders.length, newCustomersCount, returningCustomersCount, period: days };
 }
 
+export async function getAdminGiftCards(filter: "all" | "active" | "depleted" | "pending" = "all", page = 1, limit = 30) {
+  const client = db();
+  if (!client) return { cards: [] as AdminGiftCard[], count: 0 };
+
+  let query = client
+    .from("gift_cards")
+    .select("id, code, initial_value, balance, recipient_email, recipient_name, sender_name, is_active, created_at", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range((page - 1) * limit, page * limit - 1);
+
+  if (filter === "active") {
+    query = query.eq("is_active", true).gt("balance", 0);
+  } else if (filter === "depleted") {
+    query = query.eq("balance", 0);
+  } else if (filter === "pending") {
+    query = query.eq("is_active", false);
+  }
+
+  const { data, count } = await query;
+  return { cards: (data ?? []) as AdminGiftCard[], count: count ?? 0 };
+}
+
 export async function getAbandonedCarts(filter: "all" | "pending" | "sent" | "recovered" = "all", page = 1, limit = 30) {
   const client = db();
   if (!client) return { carts: [] as AdminAbandonedCart[], count: 0 };
@@ -559,6 +581,18 @@ export interface AdminCustomerOrder {
   customer_email: string;
   customer_name: string;
   discount_code: string | null;
+}
+
+export interface AdminGiftCard {
+  id: string;
+  code: string;
+  initial_value: number;
+  balance: number;
+  recipient_email: string;
+  recipient_name: string | null;
+  sender_name: string | null;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface AdminAbandonedCart {

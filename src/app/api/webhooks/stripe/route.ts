@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { sendCAPIEvent } from "@/lib/facebook/capi";
-import { sendOrderConfirmationEmail } from "@/lib/email";
+import { sendOrderConfirmationEmail, sendGiftCardEmail } from "@/lib/email";
 import { markCartRecovered } from "@/lib/actions/abandonedCart";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,6 +43,31 @@ export async function POST(request: Request) {
   switch (event.type) {
     case "payment_intent.succeeded": {
       const pi = event.data.object as Stripe.PaymentIntent;
+
+      // ── Gift card purchase ─────────────────────────────────────────────────
+      const giftCardCode = pi.metadata?.gift_card_code;
+      if (giftCardCode && !pi.metadata?.order_id) {
+        const { data: gc } = await db
+          .from("gift_cards")
+          .select("id, initial_value, recipient_email, recipient_name, sender_name, message, code")
+          .eq("code", giftCardCode)
+          .single();
+
+        if (gc) {
+          await db.from("gift_cards").update({ is_active: true }).eq("id", gc.id);
+          await sendGiftCardEmail({
+            recipientEmail: gc.recipient_email,
+            recipientName: gc.recipient_name,
+            senderName: gc.sender_name,
+            message: gc.message,
+            code: gc.code,
+            value: gc.initial_value,
+          });
+        }
+        break;
+      }
+
+      // ── Regular order payment ──────────────────────────────────────────────
       const orderId = pi.metadata?.order_id;
       const fbEventId = pi.metadata?.fb_event_id;
 
@@ -59,6 +84,7 @@ export async function POST(request: Request) {
           .select(`
             id, customer_email, customer_name, shipping_address,
             subtotal, shipping, tax, total,
+            gift_card_code, gift_card_credit,
             order_items(product_id, unit_price, quantity, product_snapshot)
           `)
           .eq("id", orderId)
@@ -69,6 +95,26 @@ export async function POST(request: Request) {
           const addr = order.shipping_address as Record<string, string> | null;
           const nameParts = (order.customer_name as string ?? "").split(" ");
           const items = (order.order_items ?? []) as RawItem[];
+
+          // Redeem partial gift card credit if attached to this order
+          if (order.gift_card_code && order.gift_card_credit > 0) {
+            const { data: gc } = await db
+              .from("gift_cards")
+              .select("id, balance")
+              .eq("code", order.gift_card_code)
+              .single();
+            if (gc) {
+              const newBalance = parseFloat(Math.max(0, gc.balance - order.gift_card_credit).toFixed(2));
+              await Promise.all([
+                db.from("gift_cards").update({ balance: newBalance }).eq("id", gc.id),
+                db.from("gift_card_redemptions").insert({
+                  gift_card_id: gc.id,
+                  order_id: order.id,
+                  amount: order.gift_card_credit,
+                }),
+              ]);
+            }
+          }
 
           await Promise.all([
             // Mark abandoned cart as recovered
