@@ -16,9 +16,9 @@ export async function getAdminProducts(search?: string, page = 1, limit = 20) {
   let query = client
     .from("products")
     .select(
-      "id, name, slug, price, compare_at_price, is_active, is_featured, created_at, categories(name), product_images(url, is_primary), product_variants(stock_quantity, low_stock_threshold)"
+      "id, name, slug, price, compare_at_price, is_active, is_featured, updated_at, categories(name), product_images(url, is_primary), product_variants(stock_quantity, low_stock_threshold)"
     )
-    .order("created_at", { ascending: false })
+    .order("updated_at", { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
 
   if (search) {

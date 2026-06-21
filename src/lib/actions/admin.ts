@@ -167,6 +167,13 @@ export async function setPrimaryImage(
   }
 
   const db = serviceDb();
+
+  const { data: product } = await db
+    .from("products")
+    .select("slug")
+    .eq("id", productId)
+    .single();
+
   await db
     .from("product_images")
     .update({ is_primary: false })
@@ -181,7 +188,7 @@ export async function setPrimaryImage(
 
   revalidatePath(`/admin/products/${productId}/edit`);
   revalidateTag("products", "minutes");
-  revalidateTag(`product-${productId}`, "hours");
+  if (product) revalidateTag(`product-${(product as { slug: string }).slug}`, "hours");
   return {};
 }
 
