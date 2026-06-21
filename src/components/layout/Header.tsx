@@ -37,7 +37,7 @@ export default function Header() {
               <Link
                 key={href}
                 href={href}
-                className={`text-sm font-medium transition-colors hover:text-black ${
+                className={`text-base font-medium transition-colors hover:text-black ${
                   pathname === href
                     ? "text-black"
                     : "text-neutral-500"
