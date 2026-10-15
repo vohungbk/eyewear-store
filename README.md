@@ -6,8 +6,26 @@ A full-stack e-commerce store for eyewear (glasses and sunglasses). It includes 
 
 - https://eyewear-store-murex.vercel.app/
 
+## Screenshots
+
+| Home | Products |
+| --- | --- |
+| ![Home page](docs/screenshots/home.png) | ![Products page](docs/screenshots/products.png) |
+
+Mobile view:
+
+<img src="docs/screenshots/home-mobile.png" alt="Home page on mobile" width="280" />
+
+## Demo Access
+
+- **Customer:** open the live site, then register a new account at `/register`. Use a test card in checkout, for example `4242 4242 4242 4242` (Stripe test mode, any future date, any CVC).
+- **Admin (`/admin`):** there is no public admin account. For security, admin credentials are not published in this repository. To get admin access in your own deployment, follow [Create an admin user](#database-setup-supabase).
+- **Reviewers:** to request a demo admin account on the live site, contact the repository owner.
+
 ## Table of Contents
 
+- [Screenshots](#screenshots)
+- [Demo Access](#demo-access)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -20,6 +38,7 @@ A full-stack e-commerce store for eyewear (glasses and sunglasses). It includes 
 - [Key Conventions](#key-conventions)
 - [Scripts](#scripts)
 - [Deployment](#deployment)
+- [License](#license)
 
 ## Features
 
@@ -177,7 +196,7 @@ Copy `.env.example` to `.env.local` and set these values.
 | `FACEBOOK_CONVERSION_API_TOKEN` | No | Facebook Conversions API token |
 | `FACEBOOK_TEST_EVENT_CODE` | No | Facebook test event code |
 
-Note: `CRON_SECRET` is used by the code but is not listed in `.env.example`. Add it to your `.env.local`.
+
 
 ## Database Setup (Supabase)
 
@@ -280,3 +299,7 @@ The site is deployed on Vercel: https://eyewear-store-murex.vercel.app/
 4. Add the Stripe webhook endpoint for the production domain.
 5. Add the Supabase redirect URL `https://<your-domain>/auth/callback`.
 6. Configure a scheduler for `/api/cron/abandoned-carts`.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
