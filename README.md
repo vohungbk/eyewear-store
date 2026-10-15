@@ -37,6 +37,7 @@ Mobile view:
 - [API Routes](#api-routes)
 - [Key Conventions](#key-conventions)
 - [Scripts](#scripts)
+- [Testing](#testing)
 - [Deployment](#deployment)
 - [License](#license)
 
@@ -285,9 +286,24 @@ npm run dev      # Start the development server
 npm run build    # Create a production build
 npm run start    # Start the production server
 npm run lint     # Run ESLint
+npm test         # Run unit tests once (Vitest)
+npm run test:watch  # Run tests in watch mode
 ```
 
-No test runner is configured yet.
+## Testing
+
+Tests use [Vitest](https://vitest.dev). External services (Supabase, Stripe, Resend, Facebook) are mocked, so no keys or network are needed.
+
+| Area | File | What is covered |
+| --- | --- | --- |
+| Coupon | `src/app/api/discount/validate/route.test.ts` | Empty, unknown, expired, usage limit, minimum order, percent and fixed discounts, cap at subtotal |
+| Checkout | `src/app/api/stripe/create-payment-intent/route.test.ts` | Empty cart, amount in cents, pending order and items, guest vs user, metadata, Stripe and DB failures |
+| Free order | `src/app/api/orders/create-free/route.test.ts` | Gift card validation, balance deduction, redemption record, email failure |
+| Webhook | `src/app/api/webhooks/stripe/route.test.ts` | Signature checks, paid and failed payments, gift card purchase and redemption, Facebook event, unhandled events |
+| Cart | `src/store/cartStore.test.ts` | Add, quantity, stock cap, remove, clear |
+| Utils | `src/lib/utils/format.test.ts` | Price format, discount percent, primary image |
+
+Shared helpers live in `src/test/supabaseMock.ts`.
 
 ## Deployment
 
