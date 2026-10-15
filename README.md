@@ -14,7 +14,7 @@ A full-stack e-commerce store for eyewear (glasses and sunglasses). It includes 
 
 Mobile view:
 
-<img src="docs/screenshots/home-mobile.png" alt="Home page on mobile" width="280" />
+<img src="docs/screenshots/home-mobile-v2.png" alt="Home page on mobile" width="280" />
 
 ## Demo Access
 
