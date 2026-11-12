@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getFeaturedProducts } from "@/lib/data/products";
 import { getCategories } from "@/lib/data/categories";
 import ProductCard from "@/components/ui/ProductCard";
 import RecentlyViewed from "@/components/ui/RecentlyViewed";
+import HeroVideo from "@/components/ui/HeroVideo";
 
 export default async function HomePage() {
   const [featured, categories] = await Promise.all([
@@ -14,34 +14,29 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-neutral-950 text-white overflow-hidden">
-        <Image
-          src="/hero.avif"
-          alt=""
-          fill
-          priority
-          className="object-cover opacity-40"
-        />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 lg:py-36 text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight">
+      <section className="relative md:-mt-[var(--header-h)] flex min-h-[560px] h-[calc(100svh-var(--header-h))] md:h-svh items-end bg-neutral-950 text-white overflow-hidden">
+        <HeroVideo />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 lg:pb-24 text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-light tracking-tight">
             See Clearly
             <br />
-            <span className="text-neutral-400">Look Exceptional</span>
+            Look Exceptional
           </h1>
-          <p className="mt-8 text-lg text-neutral-400 max-w-xl mx-auto">
+          <p className="mt-6 text-lg text-white/80 max-w-xl mx-auto">
             Premium eyewear crafted for every lifestyle. UV400 protection,
             lightweight frames, exceptional clarity.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/products"
-              className="inline-block bg-white text-black text-sm font-semibold px-8 py-3 rounded-md hover:bg-neutral-100 transition-colors"
+              className="inline-block bg-white text-black text-sm font-semibold px-8 py-3 rounded-full hover:bg-neutral-100 transition-colors"
             >
               Shop Collection
             </Link>
             <Link
               href="/collections/sunglasses"
-              className="inline-block border border-neutral-600 text-white text-sm font-semibold px-8 py-3 rounded-md hover:border-white transition-colors"
+              className="inline-block border border-white/70 text-white text-sm font-semibold px-8 py-3 rounded-full hover:border-white hover:bg-white/10 transition-colors"
             >
               Explore Sunglasses
             </Link>
