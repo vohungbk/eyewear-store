@@ -4,6 +4,7 @@ import { getCategories } from "@/lib/data/categories";
 import ProductCard from "@/components/ui/ProductCard";
 import RecentlyViewed from "@/components/ui/RecentlyViewed";
 import HeroVideo from "@/components/ui/HeroVideo";
+import PromoSplit from "@/components/ui/PromoSplit";
 
 export default async function HomePage() {
   const [featured, categories] = await Promise.all([
@@ -79,6 +80,26 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Promo tiles */}
+      <PromoSplit
+        tiles={[
+          {
+            title: "Everyday eyewear, made extraordinary",
+            ctaLabel: "Explore Intelligent Eyewear",
+            href: "/intelligent-eyewear",
+            imageUrl: "/reference-assets/promo/promo-1-lifestyle.avif",
+            imageAlt: "Model wearing tinted frames",
+          },
+          {
+            title: "Sunglasses for every season",
+            ctaLabel: "Book a demo",
+            href: "/reservations/demo/book",
+            imageUrl: "/reference-assets/promo/promo-2-frames.avif",
+            imageAlt: "Three frames in green, red and black",
+          },
+        ]}
+      />
 
       {/* Categories */}
       {categories.length > 0 && (
