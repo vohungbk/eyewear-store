@@ -27,13 +27,13 @@ const FOOTER_LINKS = {
 
 export default function Footer() {
   return (
-    <footer className="bg-neutral-950 text-neutral-400 mt-auto">
+    <footer className="bg-white text-neutral-900 border-t border-neutral-200 mt-auto">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         {/* Newsletter */}
-        <div className="mb-10 pb-10 border-b border-neutral-800 grid grid-cols-1 gap-6 md:grid-cols-2 md:items-center">
+        <div className="mb-10 pb-10 border-b border-neutral-200 grid grid-cols-1 gap-6 md:grid-cols-2 md:items-center">
           <div>
-            <h3 className="text-white text-base font-semibold">Stay in the loop</h3>
-            <p className="mt-1 text-sm text-neutral-400">
+            <h3 className="text-neutral-900 text-base font-semibold">Stay in the loop</h3>
+            <p className="mt-1 text-sm text-neutral-600">
               Get exclusive deals, new arrivals, and eyewear tips delivered to your inbox.
             </p>
           </div>
@@ -45,7 +45,7 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link
               href="/"
-              className="text-white text-xl font-bold tracking-tight"
+              className="text-neutral-900 text-xl font-bold tracking-tight"
             >
               VÉLORA
             </Link>
@@ -60,7 +60,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="hover:text-white transition-colors"
+                className="hover:opacity-60 transition-opacity"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -83,7 +83,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="hover:text-white transition-colors"
+                className="hover:opacity-60 transition-opacity"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -105,13 +105,13 @@ export default function Footer() {
           {/* Link columns */}
           {Object.entries(FOOTER_LINKS).map(([title, links]) => (
             <div key={title}>
-              <h3 className="text-white text-sm font-semibold mb-4">{title}</h3>
+              <h3 className="text-neutral-900 text-sm font-semibold mb-4">{title}</h3>
               <ul className="space-y-2">
                 {links.map(({ href, label }) => (
                   <li key={href}>
                     <Link
                       href={href}
-                      className="text-sm hover:text-white transition-colors"
+                      className="text-sm hover:opacity-60 transition-opacity"
                     >
                       {label}
                     </Link>
@@ -122,7 +122,7 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="mt-10 border-t border-neutral-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="mt-10 border-t border-neutral-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <p>© <Suspense fallback="2026"><CopyrightYear /></Suspense> VÉLORA. All rights reserved.</p>
           <div className="flex items-center gap-4">
             {/* Payment icons */}

@@ -35,7 +35,7 @@ export default function NewsletterForm() {
 
   if (status === "success") {
     return (
-      <p className="text-sm text-green-400">{message}</p>
+      <p className="text-sm text-green-700">{message}</p>
     );
   }
 
@@ -49,18 +49,18 @@ export default function NewsletterForm() {
           placeholder="Your email address"
           required
           disabled={status === "loading"}
-          className="flex-1 min-w-0 bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-sm rounded-md px-3 py-2 focus:outline-none focus:border-neutral-400 disabled:opacity-60"
+          className="flex-1 min-w-0 bg-white border border-neutral-300 text-neutral-900 placeholder-neutral-400 text-sm rounded-md px-3 py-2 focus:outline-none focus:border-neutral-900 disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="shrink-0 bg-white text-black text-sm font-semibold px-4 py-2 rounded-md hover:bg-neutral-100 transition-colors disabled:opacity-60"
+          className="shrink-0 bg-neutral-900 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-neutral-700 transition-colors disabled:opacity-60"
         >
           {status === "loading" ? "..." : "Subscribe"}
         </button>
       </div>
       {status === "error" && (
-        <p className="mt-2 text-xs text-red-400">{message}</p>
+        <p className="mt-2 text-xs text-red-600">{message}</p>
       )}
     </form>
   );
