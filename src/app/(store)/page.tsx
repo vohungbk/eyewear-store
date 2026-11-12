@@ -3,9 +3,9 @@ import { getFeaturedProducts, getProducts } from "@/lib/data/products";
 import FeaturedCarousel, {
   type CarouselProduct,
 } from "@/components/ui/FeaturedCarousel";
-import RecentlyViewed from "@/components/ui/RecentlyViewed";
 import HeroVideo from "@/components/ui/HeroVideo";
 import PromoSplit from "@/components/ui/PromoSplit";
+import FeatureSplit from "@/components/ui/FeatureSplit";
 
 export default async function HomePage() {
   const CAROUSEL_SIZE = 8;
@@ -128,8 +128,14 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Recently viewed */}
-      <RecentlyViewed />
+      {/* Collection feature */}
+      <FeatureSplit
+        title="Meet our newest collection"
+        ctaLabel="Shop now"
+        href="/products"
+        imageUrl="/assets/feature-split/feature-split-lifestyle.avif"
+        imageAlt="Model in tinted gold-rimmed sunglasses"
+      />
 
       {/* Value props */}
       <section className="bg-neutral-950 text-white mt-8">
