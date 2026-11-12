@@ -48,7 +48,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<{
   let query = publicClient()
     .from("products")
     .select(
-      `*, product_images (id, url, alt_text, position, is_primary), categories (id, name, slug)`,
+      `*, product_images (id, url, alt_text, position, is_primary), categories (id, name, slug), product_variants (id, name, attributes)`,
       { count: "exact" }
     )
     .eq("is_active", true);
@@ -122,7 +122,7 @@ export async function getRelatedProducts(
   let query = sb
     .from("products")
     .select(
-      `*, product_images (id, url, alt_text, position, is_primary), categories (id, name, slug)`
+      `*, product_images (id, url, alt_text, position, is_primary), categories (id, name, slug), product_variants (id, name, attributes)`
     )
     .eq("is_active", true)
     .neq("id", productId)
