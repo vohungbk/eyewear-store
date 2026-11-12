@@ -35,7 +35,7 @@ export default function ImpactStat({
   return (
     <section className="mx-auto grid max-w-[1600px] grid-cols-1 items-center gap-12 px-6 py-16 md:grid-cols-2 lg:px-14 lg:py-24">
       <div>
-        <p className="text-xl text-blue-700">{eyebrow}</p>
+        <p className="text-xl text-blue-700 md:text-[22px]">{eyebrow}</p>
         <p className="mt-3 text-6xl font-medium leading-none tracking-tight sm:text-7xl lg:text-[7.5rem]">
           {value}
         </p>
