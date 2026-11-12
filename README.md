@@ -1,4 +1,4 @@
-# Eyewear Store
+# VÉLORA
 
 A full-stack e-commerce store for eyewear (glasses and sunglasses). It includes a public storefront, customer accounts, Stripe checkout, and an admin dashboard.
 

@@ -16,7 +16,7 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
     <div className="w-full max-w-sm">
       <h1 className="text-2xl font-bold text-center mb-2">Sign in</h1>
       <p className="text-sm text-neutral-500 text-center mb-8">
-        Welcome back to EYEWEAR
+        Welcome back to VÉLORA
       </p>
 
       {state && !state.success && state.message && (

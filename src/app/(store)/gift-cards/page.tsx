@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import GiftCardPurchaseForm from "@/components/ui/GiftCardPurchaseForm";
 
 export const metadata: Metadata = {
-  title: "Gift Cards — EYEWEAR",
-  description: "Give the gift of great vision. Send an EYEWEAR gift card instantly by email.",
+  title: "Gift Cards — VÉLORA",
+  description: "Give the gift of great vision. Send an VÉLORA gift card instantly by email.",
 };
 
 export default function GiftCardsPage() {
@@ -26,7 +26,7 @@ export default function GiftCardsPage() {
         className="rounded-2xl mb-10 p-8 text-white relative overflow-hidden"
         style={{ background: "linear-gradient(135deg, #111 0%, #333 100%)" }}
       >
-        <p className="text-xs font-bold tracking-[0.2em] uppercase mb-6 opacity-60">EYEWEAR</p>
+        <p className="text-xs font-bold tracking-[0.2em] uppercase mb-6 opacity-60">VÉLORA</p>
         <p className="text-3xl font-bold mb-1">Gift Card</p>
         <p className="text-sm opacity-60 mb-8">Valid on any purchase · Never expires</p>
         <p className="font-mono text-lg tracking-widest opacity-40">XXXX-XXXX-XXXX-XXXX</p>

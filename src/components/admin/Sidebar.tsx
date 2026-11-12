@@ -128,7 +128,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-4 border-b border-neutral-100">
         <Link href="/" className="font-bold text-sm tracking-wider">
-          EYEWEAR
+          VÉLORA
         </Link>
         <p className="text-[10px] text-neutral-400 mt-0.5">Admin Dashboard</p>
       </div>

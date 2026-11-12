@@ -32,7 +32,7 @@ export default function RegisterForm() {
     <div className="w-full max-w-sm">
       <h1 className="text-2xl font-bold text-center mb-2">Create account</h1>
       <p className="text-sm text-neutral-500 text-center mb-8">
-        Join EYEWEAR for a better shopping experience
+        Join VÉLORA for a better shopping experience
       </p>
 
       {state && !state.success && state.message && (

@@ -47,7 +47,7 @@ export default function Footer() {
               href="/"
               className="text-white text-xl font-bold tracking-tight"
             >
-              EYEWEAR
+              VÉLORA
             </Link>
             <p className="mt-3 text-sm leading-relaxed">
               Premium eyewear crafted for every lifestyle. Quality frames,
@@ -123,7 +123,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 border-t border-neutral-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <p>© <Suspense fallback="2026"><CopyrightYear /></Suspense> EYEWEAR. All rights reserved.</p>
+          <p>© <Suspense fallback="2026"><CopyrightYear /></Suspense> VÉLORA. All rights reserved.</p>
           <div className="flex items-center gap-4">
             {/* Payment icons */}
             <span>Visa</span>
