@@ -169,7 +169,7 @@ export default function SearchAutocomplete() {
         <button
           onClick={openSearch}
           aria-label="Open search"
-          className="p-2 text-neutral-500 hover:text-black transition-colors"
+          className="p-2 text-current hover:opacity-60 transition-opacity"
         >
           <SearchIcon />
         </button>

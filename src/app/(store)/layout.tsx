@@ -5,7 +5,7 @@ import CartDrawer from "@/components/layout/CartDrawer";
 
 function HeaderFallback() {
   return (
-    <div className="sticky top-0 z-40 bg-white border-b border-neutral-200 h-16" />
+    <div className="sticky top-0 z-40 bg-white border-b border-neutral-200 h-[88px] md:h-[92px]" />
   );
 }
 
