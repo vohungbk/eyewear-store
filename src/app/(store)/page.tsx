@@ -1,16 +1,25 @@
 import Link from "next/link";
-import { getFeaturedProducts } from "@/lib/data/products";
-import { getCategories } from "@/lib/data/categories";
-import ProductCard from "@/components/ui/ProductCard";
+import { getFeaturedProducts, getProducts } from "@/lib/data/products";
+import FeaturedCarousel, {
+  type CarouselProduct,
+} from "@/components/ui/FeaturedCarousel";
 import RecentlyViewed from "@/components/ui/RecentlyViewed";
 import HeroVideo from "@/components/ui/HeroVideo";
 import PromoSplit from "@/components/ui/PromoSplit";
 
 export default async function HomePage() {
-  const [featured, categories] = await Promise.all([
-    getFeaturedProducts(8),
-    getCategories(),
-  ]);
+  const CAROUSEL_SIZE = 8;
+  const featuredOnly = await getFeaturedProducts(CAROUSEL_SIZE);
+  // Top up with the newest products so the carousel has enough to slide.
+  const featured =
+    featuredOnly.length >= CAROUSEL_SIZE
+      ? featuredOnly
+      : [
+          ...featuredOnly,
+          ...(
+            await getProducts({ sort: "newest", limit: CAROUSEL_SIZE })
+          ).products.filter((p) => !featuredOnly.some((f) => f.id === p.id)),
+        ].slice(0, CAROUSEL_SIZE);
 
   return (
     <div>
@@ -101,41 +110,21 @@ export default async function HomePage() {
         ]}
       />
 
-      {/* Categories */}
-      {categories.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <h2 className="text-xl font-bold mb-5">Shop by Category</h2>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/collections/${cat.slug}`}
-                className="px-5 py-2.5 rounded-full border border-neutral-200 text-sm font-medium hover:border-black hover:bg-black hover:text-white transition-colors"
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Featured products */}
       {featured.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">Featured</h2>
+        <section className="py-12 lg:py-16">
+          <div className="mb-6 flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-medium">
+              Shop all <span className="text-blue-700">featured</span>
+            </h2>
             <Link
               href="/products"
-              className="text-sm font-medium underline underline-offset-2 hover:no-underline"
+              className="inline-flex h-10 items-center rounded-full border border-blue-700 px-5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-700 hover:text-white"
             >
-              View all
+              Shop all
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
-            {featured.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <FeaturedCarousel products={featured as CarouselProduct[]} />
         </section>
       )}
 
