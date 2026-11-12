@@ -6,6 +6,8 @@ import FeaturedCarousel, {
 import HeroVideo from "@/components/ui/HeroVideo";
 import PromoSplit from "@/components/ui/PromoSplit";
 import FeatureSplit from "@/components/ui/FeatureSplit";
+import ImpactStat from "@/components/ui/ImpactStat";
+import { getPrimaryImage } from "@/lib/utils/format";
 
 export default async function HomePage() {
   const CAROUSEL_SIZE = 8;
@@ -135,6 +137,20 @@ export default async function HomePage() {
         href="/products"
         imageUrl="/assets/feature-split/feature-split-lifestyle.avif"
         imageAlt="Model in tinted gold-rimmed sunglasses"
+      />
+
+      {/* Impact */}
+      <ImpactStat
+        eyebrow="Buy a Pair, Give a Pair"
+        value="1,000,000"
+        description="pairs of glasses (and counting) sold and loved around the world"
+        ctaLabel="Learn more"
+        href="/pages/about"
+        images={featured
+          .map((p) => getPrimaryImage(p.product_images ?? []))
+          .filter((img): img is NonNullable<typeof img> => !!img)
+          .slice(0, 5)
+          .map((img) => ({ url: img.url, alt: img.alt || "" }))}
       />
 
       {/* Value props */}
