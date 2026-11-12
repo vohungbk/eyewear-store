@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const BASE = "/reference-assets/home-hero";
+const BASE = "/assets/home-hero";
 const DESKTOP_QUERY = "(min-width: 768px)";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
