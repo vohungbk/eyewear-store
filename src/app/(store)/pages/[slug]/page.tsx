@@ -15,7 +15,7 @@ interface PageContent {
 const PAGES: Record<string, PageContent> = {
   faq: {
     title: "Frequently Asked Questions",
-    description: "Answers to the most common questions about EYEWEAR.",
+    description: "Answers to the most common questions about VÉLORA.",
     sections: [
       {
         heading: "What materials are your frames made from?",
@@ -23,7 +23,7 @@ const PAGES: Record<string, PageContent> = {
       },
       {
         heading: "Do your sunglasses offer UV protection?",
-        body: "Yes. All EYEWEAR sunglasses provide 100% UV400 protection, blocking both UVA and UVB rays. Our lenses meet international optical standards.",
+        body: "Yes. All VÉLORA sunglasses provide 100% UV400 protection, blocking both UVA and UVB rays. Our lenses meet international optical standards.",
       },
       {
         heading: "How do I find the right frame size?",
@@ -122,12 +122,12 @@ const PAGES: Record<string, PageContent> = {
   },
 
   about: {
-    title: "About EYEWEAR",
+    title: "About VÉLORA",
     description: "Our story, mission, and commitment to quality eyewear.",
     sections: [
       {
         heading: "Our Story",
-        body: "EYEWEAR was founded with a simple belief: everyone deserves premium eyewear without the premium price tag. We work directly with expert craftspeople to bring you frames that combine timeless design with exceptional quality.",
+        body: "VÉLORA was founded with a simple belief: everyone deserves premium eyewear without the premium price tag. We work directly with expert craftspeople to bring you frames that combine timeless design with exceptional quality.",
       },
       {
         heading: "Our Mission",
@@ -177,7 +177,7 @@ const PAGES: Record<string, PageContent> = {
 
   terms: {
     title: "Terms of Service",
-    description: "The terms and conditions that govern your use of EYEWEAR.",
+    description: "The terms and conditions that govern your use of VÉLORA.",
     sections: [
       {
         heading: "Acceptance of Terms",
@@ -193,11 +193,11 @@ const PAGES: Record<string, PageContent> = {
       },
       {
         heading: "Intellectual Property",
-        body: "All content on this website — including images, text, and trademarks — is the property of EYEWEAR and may not be reproduced without our written permission.",
+        body: "All content on this website — including images, text, and trademarks — is the property of VÉLORA and may not be reproduced without our written permission.",
       },
       {
         heading: "Limitation of Liability",
-        body: "To the extent permitted by law, EYEWEAR shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or website.",
+        body: "To the extent permitted by law, VÉLORA shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or website.",
       },
       {
         heading: "Governing Law",

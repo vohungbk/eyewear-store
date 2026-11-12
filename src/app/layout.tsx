@@ -10,8 +10,8 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: "EYEWEAR — Premium Eyewear Store",
-    template: "%s | EYEWEAR",
+    default: "VÉLORA — Premium Eyewear Store",
+    template: "%s | VÉLORA",
   },
   description:
     "Premium sunglasses and eyeglasses. UV400 protection, lightweight frames, exceptional clarity.",

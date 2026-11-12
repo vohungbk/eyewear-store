@@ -8,7 +8,7 @@ function getResend(): Resend {
 }
 
 const FROM =
-  process.env.RESEND_FROM_EMAIL ?? "EYEWEAR <onboarding@resend.dev>";
+  process.env.RESEND_FROM_EMAIL ?? "VÉLORA <onboarding@resend.dev>";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -108,7 +108,7 @@ function buildHtml(order: OrderEmailData): string {
           <tr>
             <td style="background:#000;padding:24px 32px;">
               <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">
-                EYEWEAR
+                VÉLORA
               </p>
             </td>
           </tr>
@@ -204,7 +204,7 @@ function buildHtml(order: OrderEmailData): string {
           <tr>
             <td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
               <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
-                You received this email because you placed an order at EYEWEAR.<br />
+                You received this email because you placed an order at VÉLORA.<br />
                 If you have any questions, reply to this email and we'll help you out.
               </p>
             </td>
@@ -251,7 +251,7 @@ export async function sendShippedEmail(data: {
       <table cellpadding="0" cellspacing="0" border="0" width="580"
         style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
         <tr><td style="background:#000;padding:24px 32px;">
-          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">VÉLORA</p>
         </td></tr>
         <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #f0f0f0;">
           <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111;">Your order is on its way! 🚚</p>
@@ -268,7 +268,7 @@ export async function sendShippedEmail(data: {
         </td></tr>
         <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
           <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
-            You received this email because you placed an order at EYEWEAR.
+            You received this email because you placed an order at VÉLORA.
           </p>
         </td></tr>
       </table>
@@ -291,14 +291,14 @@ export async function sendNewsletterWelcomeEmail(email: string, name?: string | 
 
   const html = `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8" /><title>Welcome to EYEWEAR</title></head>
+<head><meta charset="UTF-8" /><title>Welcome to VÉLORA</title></head>
 <body style="margin:0;padding:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f6f6f6;padding:32px 0;">
     <tr><td align="center">
       <table cellpadding="0" cellspacing="0" border="0" width="580"
         style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
         <tr><td style="background:#000;padding:24px 32px;">
-          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">VÉLORA</p>
         </td></tr>
         <tr><td style="padding:32px;">
           <p style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111;">
@@ -315,7 +315,7 @@ export async function sendNewsletterWelcomeEmail(email: string, name?: string | 
         </td></tr>
         <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
           <p style="margin:0;font-size:12px;color:#aaa;">
-            You subscribed at EYEWEAR. Reply to unsubscribe at any time.
+            You subscribed at VÉLORA. Reply to unsubscribe at any time.
           </p>
         </td></tr>
       </table>
@@ -327,7 +327,7 @@ export async function sendNewsletterWelcomeEmail(email: string, name?: string | 
     await getResend().emails.send({
       from: FROM,
       to: email,
-      subject: "Welcome to EYEWEAR — you're on the list!",
+      subject: "Welcome to VÉLORA — you're on the list!",
       html,
     });
   } catch {}
@@ -361,7 +361,7 @@ export async function sendBackInStockEmail(data: {
       <table cellpadding="0" cellspacing="0" border="0" width="580"
         style="background:#fff;border-radius:8px;overflow:hidden;max-width:580px;width:100%;">
         <tr><td style="background:#000;padding:24px 32px;">
-          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">VÉLORA</p>
         </td></tr>
         <tr><td style="padding:32px 32px 24px;border-bottom:1px solid #f0f0f0;">
           <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111;">It's back in stock!</p>
@@ -389,7 +389,7 @@ export async function sendBackInStockEmail(data: {
         </td></tr>
         <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
           <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
-            You requested a back-in-stock alert at EYEWEAR.<br />
+            You requested a back-in-stock alert at VÉLORA.<br />
             <a href="${SITE_URL}" style="color:#aaa;">Unsubscribe</a> from future alerts.
           </p>
         </td></tr>
@@ -434,7 +434,7 @@ export async function sendGiftCardEmail(data: {
 
         <!-- Header -->
         <tr><td style="background:#000;padding:24px 32px;">
-          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">VÉLORA</p>
         </td></tr>
 
         <!-- Hero -->
@@ -447,7 +447,7 @@ export async function sendGiftCardEmail(data: {
           </p>
           <p style="margin:0;font-size:14px;color:#666;">
             ${greeting}<br/>
-            <strong>${from}</strong> sent you a gift card for EYEWEAR.
+            <strong>${from}</strong> sent you a gift card for VÉLORA.
           </p>
         </td></tr>
 
@@ -486,7 +486,7 @@ export async function sendGiftCardEmail(data: {
         <!-- Footer -->
         <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
           <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
-            This gift card was purchased at EYEWEAR. No expiry date.<br />
+            This gift card was purchased at VÉLORA. No expiry date.<br />
             Questions? Reply to this email and we'll help.
           </p>
         </td></tr>
@@ -497,8 +497,8 @@ export async function sendGiftCardEmail(data: {
 </body></html>`;
 
   const subject = data.senderName
-    ? `${data.senderName} sent you a ${fmt(value)} EYEWEAR gift card!`
-    : `You've received a ${fmt(value)} EYEWEAR gift card!`;
+    ? `${data.senderName} sent you a ${fmt(value)} VÉLORA gift card!`
+    : `You've received a ${fmt(value)} VÉLORA gift card!`;
 
   try {
     await getResend().emails.send({ from: FROM, to: data.recipientEmail, subject, html });
@@ -557,7 +557,7 @@ export async function sendAbandonedCartEmail(data: {
 
         <!-- Header -->
         <tr><td style="background:#000;padding:24px 32px;">
-          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">EYEWEAR</p>
+          <p style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.12em;color:#fff;">VÉLORA</p>
         </td></tr>
 
         <!-- Hero -->
@@ -605,7 +605,7 @@ export async function sendAbandonedCartEmail(data: {
         <!-- Footer -->
         <tr><td style="padding:20px 32px;background:#fafafa;border-top:1px solid #f0f0f0;">
           <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
-            You started checkout at EYEWEAR. If you didn't, you can safely ignore this email.<br />
+            You started checkout at VÉLORA. If you didn't, you can safely ignore this email.<br />
             <a href="${SITE_URL}" style="color:#aaa;">Visit our store</a>
           </p>
         </td></tr>

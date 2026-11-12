@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getStripe } from "@/lib/stripe";
 
-export const metadata: Metadata = { title: "Gift Card Sent — EYEWEAR" };
+export const metadata: Metadata = { title: "Gift Card Sent — VÉLORA" };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serviceClient(): any {

@@ -10,6 +10,8 @@
 :root {
   --background: #ffffff;
   --foreground: #111111;
+  /* Height of the sticky store header; the home hero is pulled up by this. */
+  --header-h: 109px;
 }
 
 body {
