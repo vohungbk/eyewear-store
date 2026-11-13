@@ -32,10 +32,25 @@ export default function HeroVideo() {
       <picture>
         <source
           media={DESKTOP_QUERY}
-          srcSet={`${BASE}/hero-desktop-poster.jpg`}
+          srcSet={`${BASE}/hero-desktop-poster.avif`}
+          type="image/avif"
         />
+        <source
+          media={DESKTOP_QUERY}
+          srcSet={`${BASE}/hero-desktop-poster.webp`}
+          type="image/webp"
+        />
+        <source
+          srcSet={`${BASE}/hero-mobile-poster.avif`}
+          type="image/avif"
+        />
+        <source
+          srcSet={`${BASE}/hero-mobile-poster.webp`}
+          type="image/webp"
+        />
+        {/* Fallback for browsers without <picture> support; a small WebP so it stays cheap. */}
         <img
-          src={`${BASE}/hero-mobile-poster.jpg`}
+          src={`${BASE}/hero-mobile-poster.webp`}
           alt=""
           className="h-full w-full object-cover"
         />

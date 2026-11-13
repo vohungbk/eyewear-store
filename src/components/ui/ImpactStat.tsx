@@ -6,6 +6,8 @@ interface ImpactStatProps {
   value: string;
   description: string;
   ctaLabel: string;
+  /** Extra text for screen readers and search engines, so the link is descriptive. */
+  ctaDescription?: string;
   href: string;
   /** Up to 5 images, shown as a fanned stack of photos. */
   images: { url: string; alt?: string }[];
@@ -29,6 +31,7 @@ export default function ImpactStat({
   value,
   description,
   ctaLabel,
+  ctaDescription,
   href,
   images,
 }: ImpactStatProps) {
@@ -45,6 +48,9 @@ export default function ImpactStat({
           className="mt-8 inline-flex h-12 items-center rounded-full bg-blue-700 px-6 text-base font-medium text-white transition-colors hover:bg-blue-800"
         >
           {ctaLabel}
+          {ctaDescription && (
+            <span className="sr-only"> {ctaDescription}</span>
+          )}
         </Link>
       </div>
 
