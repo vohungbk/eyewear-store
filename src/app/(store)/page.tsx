@@ -7,6 +7,7 @@ import HeroVideo from "@/components/ui/HeroVideo";
 import PromoSplit from "@/components/ui/PromoSplit";
 import FeatureSplit from "@/components/ui/FeatureSplit";
 import ImpactStat from "@/components/ui/ImpactStat";
+import InTheWild from "@/components/ui/InTheWild";
 import { getPrimaryImage } from "@/lib/utils/format";
 
 export default async function HomePage() {
@@ -137,6 +138,43 @@ export default async function HomePage() {
         href="/products"
         imageUrl="/assets/feature-split/feature-split-lifestyle.avif"
         imageAlt="Model in tinted gold-rimmed sunglasses"
+      />
+
+      {/* In the wild */}
+      <InTheWild
+        title="VÉLORA in the wild"
+        cards={[
+          {
+            caption: "Boaz in Jet Black",
+            ctaLabel: "Shop Boaz",
+            href: "/products",
+            videoUrl: "/assets/wild/video-1.mp4",
+            alt: "Man in black rectangular frames looking up",
+          },
+          {
+            caption: "Franny in Jet Black",
+            ctaLabel: "Shop Franny",
+            href: "/products",
+            imageUrl:
+              "/assets/wild/d5f6637054e31998db0ed80338f51022ae2fb7069099ac19b12ab47677f6dec7.avif",
+            alt: "Woman in black oval glasses",
+          },
+          {
+            caption: "York in Polished Silver",
+            ctaLabel: "Shop York",
+            href: "/products",
+            imageUrl:
+              "/assets/wild/27d64c856226234820b460d58b5ae4f4fb04d7855470377d67451bd5a0461063.avif",
+            alt: "Smiling man in silver aviator sunglasses",
+          },
+          {
+            caption: "Monica in Ristretto Tortoise",
+            ctaLabel: "Shop Monica",
+            href: "/products",
+            videoUrl: "/assets/wild/video-2.mp4",
+            alt: "Woman in tortoise oval glasses",
+          },
+        ]}
       />
 
       {/* Impact */}
