@@ -145,6 +145,7 @@ export default async function HomePage() {
         value="1,000,000"
         description="pairs of glasses (and counting) sold and loved around the world"
         ctaLabel="Learn more"
+        ctaDescription="about VÉLORA"
         href="/pages/about"
         images={featured
           .map((p) => getPrimaryImage(p.product_images ?? []))
