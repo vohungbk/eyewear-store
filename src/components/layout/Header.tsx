@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useCartItemCount, useCartStore } from "@/store/cartStore";
+import { useCartItemCount } from "@/store/cartStore";
 import SearchAutocomplete from "@/components/layout/SearchAutocomplete";
 
 const NAV_LINKS = [
-  { href: "/collections/eyeglasses", label: "Eyeglasses" },
+  { href: "/eyeglasses", label: "Eyeglasses" },
   { href: "/collections/sunglasses", label: "Sunglasses" },
   { href: "/collections/sports", label: "Sports" },
   { href: "/products", label: "All Eyewear" },
@@ -60,7 +60,6 @@ const iconButton = "relative p-2 hover:opacity-60 transition-opacity";
 export default function Header() {
   const pathname = usePathname();
   const itemCount = useCartItemCount();
-  const openCart = useCartStore((s) => s.openCart);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -144,14 +143,14 @@ export default function Header() {
             <Link href="/account" aria-label="Account" className={iconButton}>
               <UserIcon />
             </Link>
-            <button
-              onClick={openCart}
+            <Link
+              href="/cart"
               aria-label={`Cart (${itemCount} items)`}
               className={iconButton}
             >
               <CartIcon />
               <CartBadge count={itemCount} invert={false} />
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -192,14 +191,14 @@ export default function Header() {
             >
               <HeartIcon />
             </Link>
-            <button
-              onClick={openCart}
+            <Link
+              href="/cart"
               aria-label={`Cart (${itemCount} items)`}
               className={iconButton}
             >
               <CartIcon />
               <CartBadge count={itemCount} invert={transparent} />
-            </button>
+            </Link>
           </div>
         </div>
 
