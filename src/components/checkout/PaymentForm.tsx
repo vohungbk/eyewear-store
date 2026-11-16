@@ -23,7 +23,7 @@ const useIsClient = () =>
   useSyncExternalStore(subscribe, () => true, () => false);
 
 const primaryButton =
-  "flex h-12 w-full items-center justify-center rounded-full bg-[#1050d0] text-sm font-medium text-white transition-colors enabled:hover:bg-[#0d44b0] disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-12 w-full items-center justify-center rounded-full bg-[#1050d0] text-base font-medium text-white transition-colors enabled:hover:bg-[#0d44b0] disabled:cursor-not-allowed disabled:opacity-50";
 
 interface Promo {
   code: string;

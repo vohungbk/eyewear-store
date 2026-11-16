@@ -11,7 +11,7 @@ const useIsClient = () =>
   useSyncExternalStore(
     subscribe,
     () => true,
-    () => false
+    () => false,
   );
 
 const TrashIcon = () => (
@@ -113,9 +113,9 @@ function Summary({ total }: { total: number }) {
 }
 
 const nextStepClass =
-  "flex h-12 w-full items-center justify-center rounded-full bg-[#1050d0] text-sm font-medium text-white transition-colors hover:bg-[#0d44b0]";
+  "flex h-12 w-full items-center justify-center rounded-full bg-[#1050d0] text-base font-medium text-white transition-colors hover:bg-[#0d44b0]";
 
-export default function CartView() {
+export default function CartView({ children }: { children?: React.ReactNode }) {
   const isClient = useIsClient();
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -135,7 +135,7 @@ export default function CartView() {
         </p>
         <Link
           href="/eyeglasses"
-          className="inline-flex h-12 items-center rounded-full bg-[#1050d0] px-8 text-sm font-medium text-white transition-colors hover:bg-[#0d44b0]"
+          className="inline-flex h-12 items-center rounded-full bg-[#1050d0] px-8 text-base font-medium text-white transition-colors hover:bg-[#0d44b0]"
         >
           Shop eyeglasses
         </Link>
@@ -144,124 +144,134 @@ export default function CartView() {
   }
 
   return (
-    <div className="bg-neutral-50 lg:flex lg:min-h-[calc(100vh-var(--header-h))]">
-      {/* Items */}
-      <section className="flex-1 px-4 pb-28 pt-6 sm:px-6 lg:pb-12 lg:pt-10">
-        <div className="mx-auto max-w-xl lg:max-w-[660px]">
-          {/* Mobile perks */}
-          <Perks className="mb-4 rounded-xl bg-white px-2 py-4 shadow-sm lg:hidden" />
+    <>
+      <div className="bg-neutral-50 lg:flex lg:min-h-[635px]">
+        {/* Items */}
+        <section className="flex-1 px-4 pb-28 pt-6 sm:px-6 lg:pb-12 lg:pt-10">
+          <div className="mx-auto max-w-xl lg:max-w-[660px]">
+            {/* Mobile perks */}
+            <Perks className="mb-4 rounded-xl bg-white px-2 py-4 shadow-sm lg:hidden" />
 
-          <h1 className="mb-6 text-center font-serif text-3xl lg:text-left">
-            Your cart: {formatPrice(total)}
-          </h1>
+            <h1 className="mb-6 text-center font-serif text-3xl lg:text-left">
+              Your cart: {formatPrice(total)}
+            </h1>
 
-          <ul className="space-y-4">
-            {items.map((item) => (
-              <li
-                key={item.variantId}
-                className="rounded-xl bg-white p-4 shadow-sm sm:p-5"
-              >
-                <div className="flex gap-4">
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-white sm:h-24 sm:w-24">
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        fill
-                        sizes="96px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-neutral-100" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <Link
-                        href={`/products/${item.slug}`}
-                        className="font-medium text-[#1050d0] hover:underline"
-                      >
-                        {item.name}
-                      </Link>
-                      <span className="text-sm font-medium tabular-nums">
-                        {formatPrice(item.price * item.quantity)}
-                      </span>
+            <ul className="space-y-4">
+              {items.map((item) => (
+                <li
+                  key={item.variantId}
+                  className="rounded-xl bg-white p-4 shadow-sm sm:p-5"
+                >
+                  <div className="flex gap-4">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-white sm:h-24 sm:w-24">
+                      {item.imageUrl ? (
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.name}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-neutral-100" />
+                      )}
                     </div>
-                    <p className="mt-1 text-xs text-neutral-600">
-                      {item.variantName}
-                    </p>
-                    {item.quantity > 1 && (
-                      <p className="text-xs text-neutral-500">
-                        {formatPrice(item.price)} each
-                      </p>
-                    )}
 
-                    <div className="mt-3 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.variantId)}
-                        aria-label={`Remove ${item.name}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-900 transition-colors hover:bg-neutral-100"
-                      >
-                        <TrashIcon />
-                      </button>
-                      <div className="relative">
-                        <select
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateQuantity(
-                              item.variantId,
-                              Number(e.target.value)
-                            )
-                          }
-                          aria-label={`Quantity for ${item.name}`}
-                          className="h-8 appearance-none rounded-full border border-neutral-900 bg-white pl-3 pr-7 text-sm"
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <Link
+                          href={`/products/${item.slug}`}
+                          className="font-medium text-[#1050d0] hover:underline"
                         >
-                          {Array.from(
-                            { length: Math.max(1, Math.min(item.stockQuantity, 10)) },
-                            (_, i) => i + 1
-                          ).map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-                          <ChevronIcon />
+                          {item.name}
+                        </Link>
+                        <span className="text-sm font-medium tabular-nums">
+                          {formatPrice(item.price * item.quantity)}
                         </span>
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-600">
+                        {item.variantName}
+                      </p>
+                      {item.quantity > 1 && (
+                        <p className="text-xs text-neutral-500">
+                          {formatPrice(item.price)} each
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.variantId)}
+                          aria-label={`Remove ${item.name}`}
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-900 transition-colors hover:bg-neutral-100"
+                        >
+                          <TrashIcon />
+                        </button>
+                        <div className="relative">
+                          <select
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateQuantity(
+                                item.variantId,
+                                Number(e.target.value),
+                              )
+                            }
+                            aria-label={`Quantity for ${item.name}`}
+                            className="h-8 appearance-none rounded-full border border-neutral-900 bg-white pl-3 pr-7 text-sm"
+                          >
+                            {Array.from(
+                              {
+                                length: Math.max(
+                                  1,
+                                  Math.min(item.stockQuantity, 10),
+                                ),
+                              },
+                              (_, i) => i + 1,
+                            ).map((n) => (
+                              <option key={n} value={n}>
+                                {n}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+                            <ChevronIcon />
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
 
-          {/* Mobile summary */}
-          <div className="mt-6 border-t border-neutral-200 pt-5 lg:hidden">
-            <Summary total={total} />
+            {/* Mobile summary */}
+            <div className="mt-6 border-t border-neutral-200 pt-5 lg:hidden">
+              <Summary total={total} />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Desktop sidebar */}
-      <aside className="hidden w-[480px] shrink-0 bg-white px-8 py-10 lg:block">
-        <div className="sticky top-[calc(var(--header-h)+2rem)] space-y-6">
-          <Summary total={total} />
+        {/* Desktop sidebar */}
+        <aside className="hidden w-[480px] shrink-0 bg-white px-8 py-10 lg:block">
+          <div className="sticky top-[calc(var(--header-h)+2rem)] space-y-6">
+            <Summary total={total} />
+            <Link href="/checkout/shipping-address" className={nextStepClass}>
+              Next step
+            </Link>
+            <Perks />
+          </div>
+        </aside>
+
+        {/* Mobile sticky CTA */}
+        <div className="fixed inset-x-0 bottom-0 z-30 bg-white/95 px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] lg:hidden">
           <Link href="/checkout/shipping-address" className={nextStepClass}>
             Next step
           </Link>
-          <Perks />
         </div>
-      </aside>
-
-      {/* Mobile sticky CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-white/95 px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] lg:hidden">
-        <Link href="/checkout/shipping-address" className={nextStepClass}>
-          Next step
-        </Link>
       </div>
-    </div>
+
+      {/* Desktop only: extra content (e.g. additional pairs) */}
+      {children && <div className="hidden lg:block">{children}</div>}
+    </>
   );
 }
