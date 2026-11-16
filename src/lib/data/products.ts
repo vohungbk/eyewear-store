@@ -22,6 +22,8 @@ export interface GetProductsOptions {
   sort?: "newest" | "price_asc" | "price_desc";
   priceMin?: number;
   priceMax?: number;
+  colors?: string[];
+  frameWidths?: string[];
   limit?: number;
   offset?: number;
 }
@@ -41,9 +43,25 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<{
     sort = "newest",
     priceMin,
     priceMax,
+    colors,
+    frameWidths,
     limit = 12,
     offset = 0,
   } = options;
+
+  // Variant attribute filters: resolve matching product ids first.
+  let variantProductIds: string[] | undefined;
+  if (colors?.length || frameWidths?.length) {
+    let vq = publicClient().from("product_variants").select("product_id");
+    if (colors?.length) vq = vq.in("attributes->>color", colors);
+    if (frameWidths?.length) vq = vq.in("attributes->>frame_width", frameWidths);
+    const { data: vdata, error: verror } = await vq;
+    if (verror) throw new Error(verror.message);
+    variantProductIds = [
+      ...new Set(((vdata ?? []) as unknown as { product_id: string }[]).map((r) => r.product_id)),
+    ];
+    if (variantProductIds.length === 0) return { products: [], total: 0 };
+  }
 
   let query = publicClient()
     .from("products")
@@ -53,6 +71,7 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<{
     )
     .eq("is_active", true);
 
+  if (variantProductIds) query = query.in("id", variantProductIds);
   if (featured) query = query.eq("is_featured", true);
   if (categoryId) query = query.eq("category_id", categoryId);
   if (search) {
@@ -132,4 +151,34 @@ export async function getRelatedProducts(
 
   const { data } = await query;
   return (data ?? []) as unknown as ProductWithImages[];
+}
+
+export async function getEyeglassFilterOptions(categoryId: string): Promise<{
+  colors: string[];
+  frameWidths: string[];
+}> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("products");
+
+  const { data, error } = await publicClient()
+    .from("products")
+    .select("product_variants (attributes)")
+    .eq("category_id", categoryId)
+    .eq("is_active", true);
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as unknown as {
+    product_variants: { attributes: unknown }[] | null;
+  }[];
+  const colors = new Set<string>();
+  const widths = new Set<string>();
+  for (const row of rows) {
+    for (const v of row.product_variants ?? []) {
+      const a = (v.attributes ?? {}) as { color?: string; frame_width?: string };
+      if (a.color) colors.add(a.color);
+      if (a.frame_width) widths.add(a.frame_width);
+    }
+  }
+  return { colors: [...colors].sort(), frameWidths: [...widths].sort() };
 }
