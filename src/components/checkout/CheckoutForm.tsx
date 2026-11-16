@@ -16,16 +16,17 @@ import type {
   ShippingRate,
 } from "@stripe/stripe-js";
 import { useCartStore } from "@/store/cartStore";
+import { useCheckoutStore } from "@/store/checkoutStore";
 import { formatPrice } from "@/lib/utils/format";
 import type { CartItem } from "@/types/cart";
 import { initiateCheckout } from "@/lib/facebook/pixel";
 import { upsertAbandonedCart } from "@/lib/actions/abandonedCart";
 
-const stripePromise = loadStripe(
+export const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-const elementsAppearance = {
+export const elementsAppearance = {
   theme: "flat" as const,
   variables: {
     fontFamily: "system-ui, sans-serif",
@@ -42,7 +43,7 @@ const elementsAppearance = {
   },
 };
 
-function calcTotals(items: CartItem[], discountAmount = 0, giftCardCredit = 0) {
+export function calcTotals(items: CartItem[], discountAmount = 0, giftCardCredit = 0) {
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const discount = Math.min(discountAmount, subtotal);
   const discounted = subtotal - discount;
@@ -467,16 +468,21 @@ export default function CheckoutForm({
     balance: number;
   } | null>(null);
 
-  const [form, setForm] = useState<FormValues>({
-    email: defaultEmail,
-    full_name: defaultName,
-    phone: "",
-    line1: "",
-    line2: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "US",
+  // Prefill from the /checkout/shipping-address step, if completed. The form
+  // renders a skeleton until hydrated, so SSR vs client values cannot mismatch.
+  const [form, setForm] = useState<FormValues>(() => {
+    const saved = useCheckoutStore.getState().shipping;
+    return {
+      email: saved?.email || defaultEmail,
+      full_name: saved?.full_name || defaultName,
+      phone: saved?.phone ?? "",
+      line1: saved?.line1 ?? "",
+      line2: saved?.line2 ?? "",
+      city: saved?.city ?? "",
+      state: saved?.state ?? "",
+      postal_code: saved?.postal_code ?? "",
+      country: saved?.country ?? "US",
+    };
   });
 
   // Wait for Zustand to rehydrate from localStorage before rendering
