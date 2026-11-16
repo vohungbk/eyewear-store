@@ -51,7 +51,7 @@ export default function AdditionalPairs({ items }: { items: PairItem[] }) {
     >
       <h2
         id="additional-pairs-heading"
-        className="mb-6 font-serif text-2xl"
+        className="mb-6 font-serif text-[30px]"
       >
         Save 20% on additional pairs
       </h2>
