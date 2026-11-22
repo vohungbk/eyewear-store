@@ -35,12 +35,12 @@ export default function FeatureSplit({
       </div>
       <div className="flex items-center bg-[#0a1247] px-8 py-16 text-white lg:px-24">
         <div>
-          <h2 className="max-w-sm font-serif text-3xl leading-tight lg:text-4xl">
+          <h2 className="max-w-sm font-serif text-[32px] leading-tight lg:max-w-xl lg:text-[55px]">
             {title}
           </h2>
           <Link
             href={href}
-            className="mt-5 inline-flex h-10 items-center rounded-full bg-white px-5 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-200"
+            className="mt-5 inline-flex h-12 items-center rounded-full bg-white px-6 text-base font-semibold text-neutral-900 transition-colors hover:bg-neutral-200"
           >
             {ctaLabel}
           </Link>

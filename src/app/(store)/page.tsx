@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { getFeaturedProducts, getProducts } from "@/lib/data/products";
-import FeaturedCarousel, {
-  type CarouselProduct,
-} from "@/components/ui/FeaturedCarousel";
+import FeaturedCarousel, { type CarouselProduct } from "@/components/ui/FeaturedCarousel";
 import HeroVideo from "@/components/ui/HeroVideo";
 import PromoSplit from "@/components/ui/PromoSplit";
 import FeatureSplit from "@/components/ui/FeatureSplit";
@@ -19,9 +17,7 @@ export default async function HomePage() {
       ? featuredOnly
       : [
           ...featuredOnly,
-          ...(
-            await getProducts({ sort: "newest", limit: CAROUSEL_SIZE })
-          ).products.filter((p) => !featuredOnly.some((f) => f.id === p.id)),
+          ...(await getProducts({ sort: "newest", limit: CAROUSEL_SIZE })).products.filter((p) => !featuredOnly.some((f) => f.id === p.id)),
         ].slice(0, CAROUSEL_SIZE);
 
   return (
@@ -38,8 +34,7 @@ export default async function HomePage() {
             Look Exceptional
           </h1>
           <p className="mt-6 text-lg text-white/80 max-w-xl mx-auto">
-            Premium eyewear crafted for every lifestyle. UV400 protection,
-            lightweight frames, exceptional clarity.
+            Premium eyewear crafted for every lifestyle. UV400 protection, lightweight frames, exceptional clarity.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -77,12 +72,7 @@ export default async function HomePage() {
 
             <span className="hidden sm:block w-px h-4 bg-neutral-200" />
 
-            {[
-              "UV400 Protection",
-              "Free Shipping",
-              "30-Day Returns",
-              "Premium Materials",
-            ].map((label) => (
+            {["UV400 Protection", "Free Shipping", "30-Day Returns", "Premium Materials"].map((label) => (
               <div key={label} className="flex items-center gap-1.5">
                 <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -134,9 +124,9 @@ export default async function HomePage() {
 
       {/* Collection feature */}
       <FeatureSplit
-        title="Meet our newest collection"
+        title="A new collaboration with Rare Beauty"
         ctaLabel="Shop now"
-        href="/products"
+        href="/collections/rare-beauty"
         imageUrl="/assets/feature-split/feature-split-lifestyle.avif"
         imageAlt="Model in tinted gold-rimmed sunglasses"
       />
@@ -156,16 +146,14 @@ export default async function HomePage() {
             caption: "Franny in Jet Black",
             ctaLabel: "Shop Franny",
             href: "/products",
-            imageUrl:
-              "/assets/wild/d5f6637054e31998db0ed80338f51022ae2fb7069099ac19b12ab47677f6dec7.avif",
+            imageUrl: "/assets/wild/d5f6637054e31998db0ed80338f51022ae2fb7069099ac19b12ab47677f6dec7.avif",
             alt: "Woman in black oval glasses",
           },
           {
             caption: "York in Polished Silver",
             ctaLabel: "Shop York",
             href: "/products",
-            imageUrl:
-              "/assets/wild/27d64c856226234820b460d58b5ae4f4fb04d7855470377d67451bd5a0461063.avif",
+            imageUrl: "/assets/wild/27d64c856226234820b460d58b5ae4f4fb04d7855470377d67451bd5a0461063.avif",
             alt: "Smiling man in silver aviator sunglasses",
           },
           {
