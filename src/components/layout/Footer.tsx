@@ -8,7 +8,6 @@ const FOOTER_LINKS = {
     { href: "/products", label: "All Eyewear" },
     { href: "/collections/sunglasses", label: "Sunglasses" },
     { href: "/eyeglasses", label: "Eyeglasses" },
-    { href: "/collections/sports", label: "Sports" },
     { href: "/collections/blue-light", label: "Blue Light" },
     { href: "/collections", label: "New collections" },
   ],
