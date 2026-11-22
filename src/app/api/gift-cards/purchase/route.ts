@@ -6,7 +6,7 @@ import { getStripe } from "@/lib/stripe";
 function serviceClient(): any {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
 
@@ -22,6 +22,22 @@ function generateCode(): string {
   return `${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8, 12)}-${code.slice(12, 16)}`;
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Valid when it is a real calendar day, not before yesterday (UTC, covers timezones) and within a year. */
+function isValidDeliveryDate(value: string): boolean {
+  if (!DATE_RE.test(value)) return false;
+  const time = Date.parse(`${value}T00:00:00Z`);
+  if (Number.isNaN(time) || new Date(time).toISOString().slice(0, 10) !== value)
+    return false;
+  const todayUtc = Date.parse(
+    new Date().toISOString().slice(0, 10) + "T00:00:00Z",
+  );
+  return time >= todayUtc - DAY_MS && time <= todayUtc + 366 * DAY_MS;
+}
+
 const VALID_AMOUNTS = [25, 50, 100, 200];
 
 export async function POST(request: Request) {
@@ -31,19 +47,48 @@ export async function POST(request: Request) {
       recipientEmail: string;
       recipientName?: string;
       senderName?: string;
+      senderEmail?: string;
+      deliveryDate?: string;
       message?: string;
     };
 
-    const { amount, recipientEmail, recipientName, senderName, message } = body;
+    const {
+      amount,
+      recipientEmail,
+      recipientName,
+      senderName,
+      senderEmail,
+      deliveryDate,
+      message,
+    } = body;
 
     if (!amount || amount < 5 || amount > 1000) {
-      return NextResponse.json({ error: "Amount must be between $5 and $1,000." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Amount must be between $5 and $1,000." },
+        { status: 400 },
+      );
     }
-    if (!VALID_AMOUNTS.includes(amount) && (amount % 1 !== 0)) {
+    if (!VALID_AMOUNTS.includes(amount) && amount % 1 !== 0) {
       return NextResponse.json({ error: "Invalid amount." }, { status: 400 });
     }
     if (!recipientEmail?.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      return NextResponse.json({ error: "Invalid recipient email." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid recipient email." },
+        { status: 400 },
+      );
+    }
+
+    if (senderEmail && !EMAIL_RE.test(senderEmail)) {
+      return NextResponse.json(
+        { error: "Invalid sender email." },
+        { status: 400 },
+      );
+    }
+    if (deliveryDate && !isValidDeliveryDate(deliveryDate)) {
+      return NextResponse.json(
+        { error: "Invalid delivery date." },
+        { status: 400 },
+      );
     }
 
     // Generate a unique code (retry if collision)
@@ -56,10 +101,16 @@ export async function POST(request: Request) {
         .select("id")
         .eq("code", candidate)
         .single();
-      if (!existing) { code = candidate; break; }
+      if (!existing) {
+        code = candidate;
+        break;
+      }
     }
     if (!code) {
-      return NextResponse.json({ error: "Failed to generate code. Please try again." }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to generate code. Please try again." },
+        { status: 500 },
+      );
     }
 
     // Create Stripe Payment Intent
@@ -80,6 +131,8 @@ export async function POST(request: Request) {
       recipient_name: recipientName || null,
       sender_name: senderName || null,
       message: message || null,
+      sender_email: senderEmail || null,
+      delivery_date: deliveryDate || null,
       stripe_payment_intent_id: pi.id,
       is_active: false,
     });
@@ -89,6 +142,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ clientSecret: pi.client_secret, code });
   } catch (err) {
     console.error("[gift-cards/purchase]", err);
-    return NextResponse.json({ error: "Failed to create gift card. Please try again." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create gift card. Please try again." },
+      { status: 500 },
+    );
   }
 }

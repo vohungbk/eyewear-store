@@ -106,14 +106,35 @@ interface DetailsForm {
   message: string;
 }
 
-export default function GiftCardPurchaseForm() {
+/** Stripe payment step shown after the gift card order has been created. */
+export function GiftCardPayment({
+  clientSecret,
+  amount,
+  onBack,
+}: {
+  clientSecret: string;
+  amount: number;
+  onBack: () => void;
+}) {
+  return (
+    <Elements stripe={stripePromise} options={{ clientSecret, appearance: elementsAppearance }}>
+      <PaymentStep amount={amount} onBack={onBack} />
+    </Elements>
+  );
+}
+
+/**
+ * `presetAmount`: a number locks the amount (amount section hidden), `null` shows only the
+ * custom amount input, `undefined` keeps the full amount picker.
+ */
+export default function GiftCardPurchaseForm({ presetAmount }: { presetAmount?: number | null }) {
   const [step, setStep] = useState<"details" | "payment">("details");
   const [clientSecret, setClientSecret] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState<DetailsForm>({
-    amount: 50,
+    amount: typeof presetAmount === "number" ? presetAmount : presetAmount === null ? "" : 50,
     customAmount: "",
     recipientEmail: "",
     recipientName: "",
@@ -185,8 +206,10 @@ export default function GiftCardPurchaseForm() {
   return (
     <form onSubmit={handleDetailsSubmit} className="space-y-8">
       {/* Amount */}
+      {typeof presetAmount !== "number" && (
       <section>
         <h2 className="text-base font-semibold mb-4">Choose an amount</h2>
+        {presetAmount === undefined && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {PRESET_AMOUNTS.map((amt) => (
             <button
@@ -203,6 +226,7 @@ export default function GiftCardPurchaseForm() {
             </button>
           ))}
         </div>
+        )}
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="customAmount">
             Custom amount
@@ -226,6 +250,7 @@ export default function GiftCardPurchaseForm() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Recipient */}
       <section>

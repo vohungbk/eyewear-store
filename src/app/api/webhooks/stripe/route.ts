@@ -10,7 +10,7 @@ import { markCartRecovered } from "@/lib/actions/abandonedCart";
 function serviceClient(): any {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
 
@@ -29,12 +29,12 @@ export async function POST(request: Request) {
     event = getStripe().webhooks.constructEvent(
       body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (err) {
     return new Response(
       `Webhook Error: ${err instanceof Error ? err.message : "Unknown"}`,
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -49,20 +49,36 @@ export async function POST(request: Request) {
       if (giftCardCode && !pi.metadata?.order_id) {
         const { data: gc } = await db
           .from("gift_cards")
-          .select("id, initial_value, recipient_email, recipient_name, sender_name, message, code")
+          .select(
+            "id, initial_value, recipient_email, recipient_name, sender_name, message, code, delivery_date, email_sent_at",
+          )
           .eq("code", giftCardCode)
           .single();
 
         if (gc) {
-          await db.from("gift_cards").update({ is_active: true }).eq("id", gc.id);
-          await sendGiftCardEmail({
-            recipientEmail: gc.recipient_email,
-            recipientName: gc.recipient_name,
-            senderName: gc.sender_name,
-            message: gc.message,
-            code: gc.code,
-            value: gc.initial_value,
-          });
+          await db
+            .from("gift_cards")
+            .update({ is_active: true })
+            .eq("id", gc.id);
+
+          // Stripe may retry the webhook, and future-dated cards are sent by the
+          // /api/cron/gift-cards job once their delivery date arrives.
+          const today = new Date().toISOString().slice(0, 10);
+          const dueNow = !gc.delivery_date || gc.delivery_date <= today;
+          if (dueNow && !gc.email_sent_at) {
+            await sendGiftCardEmail({
+              recipientEmail: gc.recipient_email,
+              recipientName: gc.recipient_name,
+              senderName: gc.sender_name,
+              message: gc.message,
+              code: gc.code,
+              value: gc.initial_value,
+            });
+            await db
+              .from("gift_cards")
+              .update({ email_sent_at: new Date().toISOString() })
+              .eq("id", gc.id);
+          }
         }
         break;
       }
@@ -81,19 +97,30 @@ export async function POST(request: Request) {
         // Fetch full order once — used for both CAPI and confirmation email
         const { data: order } = await db
           .from("orders")
-          .select(`
+          .select(
+            `
             id, customer_email, customer_name, shipping_address,
             subtotal, shipping, tax, total,
             gift_card_code, gift_card_credit,
             order_items(product_id, unit_price, quantity, product_snapshot)
-          `)
+          `,
+          )
           .eq("id", orderId)
           .single();
 
         if (order) {
-          type RawItem = { product_id: string; unit_price: number; quantity: number; product_snapshot: { name: string; variant_name?: string; image_url?: string } | null };
+          type RawItem = {
+            product_id: string;
+            unit_price: number;
+            quantity: number;
+            product_snapshot: {
+              name: string;
+              variant_name?: string;
+              image_url?: string;
+            } | null;
+          };
           const addr = order.shipping_address as Record<string, string> | null;
-          const nameParts = (order.customer_name as string ?? "").split(" ");
+          const nameParts = ((order.customer_name as string) ?? "").split(" ");
           const items = (order.order_items ?? []) as RawItem[];
 
           // Redeem partial gift card credit if attached to this order
@@ -104,9 +131,14 @@ export async function POST(request: Request) {
               .eq("code", order.gift_card_code)
               .single();
             if (gc) {
-              const newBalance = parseFloat(Math.max(0, gc.balance - order.gift_card_credit).toFixed(2));
+              const newBalance = parseFloat(
+                Math.max(0, gc.balance - order.gift_card_credit).toFixed(2),
+              );
               await Promise.all([
-                db.from("gift_cards").update({ balance: newBalance }).eq("id", gc.id),
+                db
+                  .from("gift_cards")
+                  .update({ balance: newBalance })
+                  .eq("id", gc.id),
                 db.from("gift_card_redemptions").insert({
                   gift_card_id: gc.id,
                   order_id: order.id,

@@ -23,7 +23,9 @@ vi.mock("@/lib/email", () => ({
   sendOrderConfirmationEmail: m.sendOrderConfirmationEmail,
   sendGiftCardEmail: m.sendGiftCardEmail,
 }));
-vi.mock("@/lib/actions/abandonedCart", () => ({ markCartRecovered: m.markCartRecovered }));
+vi.mock("@/lib/actions/abandonedCart", () => ({
+  markCartRecovered: m.markCartRecovered,
+}));
 
 import { POST } from "./route";
 
@@ -31,22 +33,43 @@ const order = {
   id: "order-1",
   customer_email: "a@b.com",
   customer_name: "Jane Doe",
-  shipping_address: { line1: "1 St", city: "NYC", state: "NY", postal_code: "10001", country: "US" },
+  shipping_address: {
+    line1: "1 St",
+    city: "NYC",
+    state: "NY",
+    postal_code: "10001",
+    country: "US",
+  },
   subtotal: 100,
   shipping: 5,
   tax: 8,
   total: 113,
   gift_card_code: null,
   gift_card_credit: 0,
-  order_items: [{ product_id: "p1", unit_price: 100, quantity: 2, product_snapshot: { name: "Aviator" } }],
+  order_items: [
+    {
+      product_id: "p1",
+      unit_price: 100,
+      quantity: 2,
+      product_snapshot: { name: "Aviator" },
+    },
+  ],
 };
 
 function event(type: string, metadata: Record<string, string>, id = "pi_1") {
-  m.constructEvent.mockReturnValue({ type, data: { object: { id, metadata } } });
+  m.constructEvent.mockReturnValue({
+    type,
+    data: { object: { id, metadata } },
+  });
 }
 
 function post() {
-  return POST(new Request("http://test/api/webhooks/stripe", { method: "POST", body: "{}" }));
+  return POST(
+    new Request("http://test/api/webhooks/stripe", {
+      method: "POST",
+      body: "{}",
+    }),
+  );
 }
 
 describe("POST /api/webhooks/stripe", () => {
@@ -71,24 +94,102 @@ describe("POST /api/webhooks/stripe", () => {
     expect(await res.text()).toContain("bad signature");
   });
 
+  describe("gift card purchase", () => {
+    const card = {
+      id: "gc-1",
+      code: "AAAA-BBBB-CCCC-DDDD",
+      initial_value: 50,
+      recipient_email: "to@b.com",
+      recipient_name: "Sam",
+      sender_name: "Jo",
+      message: "Enjoy",
+      delivery_date: null as string | null,
+      email_sent_at: null as string | null,
+    };
+    const tomorrow = () =>
+      new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    it("should activate the card and email it right away when there is no delivery date", async () => {
+      const mock = createDbMock({ "gift_cards:select": { data: card } });
+      m.db = mock.db;
+      event("payment_intent.succeeded", { gift_card_code: card.code });
+
+      await post();
+
+      expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({
+        is_active: true,
+      });
+      expect(m.sendGiftCardEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipientEmail: "to@b.com",
+          code: card.code,
+          value: 50,
+        }),
+      );
+      expect(mock.callsFor("gift_cards", "update")[1].payload).toEqual({
+        email_sent_at: expect.any(String),
+      });
+    });
+
+    it("should activate the card but not email it when the delivery date is in the future", async () => {
+      const mock = createDbMock({
+        "gift_cards:select": { data: { ...card, delivery_date: tomorrow() } },
+      });
+      m.db = mock.db;
+      event("payment_intent.succeeded", { gift_card_code: card.code });
+
+      await post();
+
+      expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({
+        is_active: true,
+      });
+      expect(m.sendGiftCardEmail).not.toHaveBeenCalled();
+    });
+
+    it("should not email the card again when the webhook is retried", async () => {
+      m.db = createDbMock({
+        "gift_cards:select": {
+          data: { ...card, email_sent_at: "2026-11-22T00:00:00Z" },
+        },
+      }).db;
+      event("payment_intent.succeeded", { gift_card_code: card.code });
+
+      await post();
+
+      expect(m.sendGiftCardEmail).not.toHaveBeenCalled();
+    });
+  });
+
   it("should mark the order as paid and send the confirmation email on payment success", async () => {
     const mock = createDbMock({ "orders:select": { data: order } });
     m.db = mock.db;
-    event("payment_intent.succeeded", { order_id: "order-1", fb_event_id: "fb-1" });
+    event("payment_intent.succeeded", {
+      order_id: "order-1",
+      fb_event_id: "fb-1",
+    });
 
     const res = await post();
 
     expect(res.status).toBe(200);
-    expect(mock.callsFor("orders", "update")[0].payload).toEqual({ status: "paid" });
+    expect(mock.callsFor("orders", "update")[0].payload).toEqual({
+      status: "paid",
+    });
     expect(m.sendOrderConfirmationEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "order-1", customer_email: "a@b.com", total: 113 })
+      expect.objectContaining({
+        id: "order-1",
+        customer_email: "a@b.com",
+        total: 113,
+      }),
     );
     expect(m.markCartRecovered).toHaveBeenCalledWith("a@b.com");
   });
 
   it("should send a Facebook Purchase event with the deduplication id", async () => {
     m.db = createDbMock({ "orders:select": { data: order } }).db;
-    event("payment_intent.succeeded", { order_id: "order-1", fb_event_id: "fb-1" });
+    event("payment_intent.succeeded", {
+      order_id: "order-1",
+      fb_event_id: "fb-1",
+    });
 
     await post();
 
@@ -96,8 +197,12 @@ describe("POST /api/webhooks/stripe", () => {
       expect.objectContaining({
         eventName: "Purchase",
         eventId: "fb-1",
-        customData: expect.objectContaining({ value: 113, numItems: 2, orderId: "order-1" }),
-      })
+        customData: expect.objectContaining({
+          value: 113,
+          numItems: 2,
+          orderId: "order-1",
+        }),
+      }),
     );
   });
 
@@ -112,7 +217,9 @@ describe("POST /api/webhooks/stripe", () => {
 
   it("should deduct the gift card credit and record a redemption", async () => {
     const mock = createDbMock({
-      "orders:select": { data: { ...order, gift_card_code: "GC-1", gift_card_credit: 30 } },
+      "orders:select": {
+        data: { ...order, gift_card_code: "GC-1", gift_card_credit: 30 },
+      },
       "gift_cards:select": { data: { id: "gc-1", balance: 50 } },
     });
     m.db = mock.db;
@@ -120,17 +227,23 @@ describe("POST /api/webhooks/stripe", () => {
 
     await post();
 
-    expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({ balance: 20 });
-    expect(mock.callsFor("gift_card_redemptions", "insert")[0].payload).toEqual({
-      gift_card_id: "gc-1",
-      order_id: "order-1",
-      amount: 30,
+    expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({
+      balance: 20,
     });
+    expect(mock.callsFor("gift_card_redemptions", "insert")[0].payload).toEqual(
+      {
+        gift_card_id: "gc-1",
+        order_id: "order-1",
+        amount: 30,
+      },
+    );
   });
 
   it("should never let the gift card balance go below zero", async () => {
     const mock = createDbMock({
-      "orders:select": { data: { ...order, gift_card_code: "GC-1", gift_card_credit: 80 } },
+      "orders:select": {
+        data: { ...order, gift_card_code: "GC-1", gift_card_credit: 80 },
+      },
       "gift_cards:select": { data: { id: "gc-1", balance: 50 } },
     });
     m.db = mock.db;
@@ -138,7 +251,9 @@ describe("POST /api/webhooks/stripe", () => {
 
     await post();
 
-    expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({ balance: 0 });
+    expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({
+      balance: 0,
+    });
   });
 
   it("should activate the gift card and email the recipient on a gift card purchase", async () => {
@@ -160,9 +275,15 @@ describe("POST /api/webhooks/stripe", () => {
 
     await post();
 
-    expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({ is_active: true });
+    expect(mock.callsFor("gift_cards", "update")[0].payload).toEqual({
+      is_active: true,
+    });
     expect(m.sendGiftCardEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientEmail: "friend@x.com", code: "GC-9", value: 100 })
+      expect.objectContaining({
+        recipientEmail: "friend@x.com",
+        code: "GC-9",
+        value: 100,
+      }),
     );
     expect(m.sendOrderConfirmationEmail).not.toHaveBeenCalled();
   });
@@ -175,7 +296,9 @@ describe("POST /api/webhooks/stripe", () => {
     const res = await post();
 
     expect(res.status).toBe(200);
-    expect(mock.callsFor("orders", "update")[0].payload).toEqual({ status: "cancelled" });
+    expect(mock.callsFor("orders", "update")[0].payload).toEqual({
+      status: "cancelled",
+    });
   });
 
   it("should return 200 and change nothing for unhandled event types", async () => {
