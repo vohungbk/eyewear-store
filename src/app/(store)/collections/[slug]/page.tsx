@@ -7,16 +7,42 @@ import { getProducts } from "@/lib/data/products";
 import ProductCard from "@/components/ui/ProductCard";
 import SortSelect from "@/components/ui/SortSelect";
 import PriceFilter from "@/components/ui/PriceFilter";
+import FrameCatalogPage, {
+  type FrameCatalogConfig,
+  type FrameCatalogSearchParams,
+} from "@/components/ui/FrameCatalogPage";
+import { SAMPLE_BANNER } from "@/lib/data/eyeglassesSample";
 
 interface CollectionPageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{
-    sort?: string;
-    page?: string;
-    price_min?: string;
-    price_max?: string;
-  }>;
+  searchParams: Promise<
+    FrameCatalogSearchParams & {
+      sort?: string;
+      page?: string;
+      price_min?: string;
+      price_max?: string;
+    }
+  >;
 }
+
+// Collections that use the Warby Parker style catalog layout.
+const FRAME_CATALOGS: Record<string, FrameCatalogConfig> = {
+  sunglasses: {
+    categorySlug: "sunglasses",
+    title: "Sunglasses",
+    basePath: "/collections/sunglasses",
+    description: [
+      "Starting at $95, including UV-blocking lenses with scratch-resistant coatings. After choosing your sunglasses, add prescription lenses or polarized and tinted options.",
+      "Buy one pair and get 20% off additional pairs, plus get free shipping and free 30-day returns on every order.",
+    ],
+    merch: [
+      { value: "bestsellers", label: "Bestsellers" },
+      { value: "new-arrival", label: "New arrivals" },
+    ],
+    banner: SAMPLE_BANNER,
+    bannerAlways: true,
+  },
+};
 
 export async function generateMetadata({
   params,
@@ -36,8 +62,16 @@ export default async function CollectionPage({
   params,
   searchParams,
 }: CollectionPageProps) {
-  const [{ slug }, { sort = "newest", page = "1", price_min, price_max }] =
-    await Promise.all([params, searchParams]);
+  const { slug } = await params;
+  const frameCatalog = FRAME_CATALOGS[slug];
+  if (frameCatalog) {
+    return (
+      <FrameCatalogPage config={frameCatalog} searchParams={searchParams} />
+    );
+  }
+
+  const { sort = "newest", page = "1", price_min, price_max } =
+    await searchParams;
 
   const category = await getCategory(slug);
   if (!category) notFound();
