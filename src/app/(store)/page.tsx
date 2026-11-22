@@ -27,13 +27,14 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative md:-mt-[var(--header-h)] flex min-h-[560px] h-[calc(100svh-var(--header-h))] md:h-svh items-end bg-neutral-950 text-white overflow-hidden">
+      <section className="relative md:-mt-[var(--header-h)] flex min-h-[560px] h-[calc(100svh-var(--header-h))] md:h-svh items-center bg-neutral-950 text-white overflow-hidden">
         <HeroVideo />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 lg:pb-24 text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-light tracking-tight">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl lg:whitespace-nowrap font-light tracking-tight">
             See Clearly
-            <br />
+            <br className="lg:hidden" />
+            <span className="hidden lg:inline">&nbsp;</span>
             Look Exceptional
           </h1>
           <p className="mt-6 text-lg text-white/80 max-w-xl mx-auto">
@@ -43,13 +44,13 @@ export default async function HomePage() {
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/products"
-              className="inline-block bg-white text-black text-sm font-semibold px-8 py-3 rounded-full hover:bg-neutral-100 transition-colors"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-[#2a4bd0] px-6 text-[15px] font-semibold text-white transition-colors hover:bg-[#2340b8]"
             >
               Shop Collection
             </Link>
             <Link
               href="/collections/sunglasses"
-              className="inline-block border border-white/70 text-white text-sm font-semibold px-8 py-3 rounded-full hover:border-white hover:bg-white/10 transition-colors"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-[#0f1b6b] px-6 text-[15px] font-semibold text-white transition-colors hover:bg-[#0b1550]"
             >
               Explore Sunglasses
             </Link>
