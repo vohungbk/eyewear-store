@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import FacebookPixel from "@/components/analytics/FacebookPixel";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 
 // Sans for UI/body text, serif for headlines (common ecommerce pairing).
 const sans = Inter({
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="en" className={`${sans.variable} ${serif.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <FacebookPixel />
+        <GoogleAnalytics />
         {children}
       </body>
     </html>
