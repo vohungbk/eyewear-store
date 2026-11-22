@@ -10,6 +10,7 @@ const FOOTER_LINKS = {
     { href: "/eyeglasses", label: "Eyeglasses" },
     { href: "/collections/sports", label: "Sports" },
     { href: "/collections/blue-light", label: "Blue Light" },
+    { href: "/collections", label: "New collections" },
   ],
   Help: [
     { href: "/pages/faq", label: "FAQ" },

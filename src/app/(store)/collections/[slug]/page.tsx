@@ -25,7 +25,6 @@ interface CollectionPageProps {
   >;
 }
 
-// Collections that use the Warby Parker style catalog layout.
 const FRAME_CATALOGS: Record<string, FrameCatalogConfig> = {
   sunglasses: {
     categorySlug: "sunglasses",
@@ -97,6 +96,8 @@ export default async function CollectionPage({
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-neutral-500 mb-6">
         <Link href="/" className="hover:text-black transition-colors">Home</Link>
+        <span>/</span>
+        <Link href="/collections" className="hover:text-black transition-colors">Collections</Link>
         <span>/</span>
         <span className="text-neutral-700 font-medium">{category.name}</span>
       </nav>

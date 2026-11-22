@@ -1,4 +1,3 @@
-// Frames and banners copied from the saved Warby Parker "Rare Beauty"
 // collection page. Demo content only.
 
 import type { EyeglassItem } from "./eyeglassesSample";
@@ -18,7 +17,7 @@ export const RARE_BEAUTY_FRAMES: EyeglassItem[] = [
     id: "franny-resilience",
     name: "Franny",
     price: 95,
-    tag: "Warby Parker | Rare Beauty",
+    tag: "VÉLORA | Rare Beauty",
     image: "https://i.warbycdn.com/s/c/229a403446bc7548bc49a1ae55929d7ff7157a55.png",
     href: "/products",
     cta: "Select lenses and buy",
@@ -33,7 +32,7 @@ export const RARE_BEAUTY_FRAMES: EyeglassItem[] = [
     id: "albie-faith",
     name: "Albie",
     price: 145,
-    tag: "Warby Parker | Rare Beauty",
+    tag: "VÉLORA | Rare Beauty",
     image: "https://i.warbycdn.com/s/c/9ab97077e69cdc711a46fe123b53f0c3caa93e6d.png",
     href: "/products",
     cta: "Select lenses and buy",
@@ -45,7 +44,7 @@ export const RARE_BEAUTY_FRAMES: EyeglassItem[] = [
     id: "gillian-hope",
     name: "Gillian",
     price: 95,
-    tag: "Warby Parker | Rare Beauty",
+    tag: "VÉLORA | Rare Beauty",
     image: "https://i.warbycdn.com/s/c/c50ce58beed2f5ef2cb4039e9d545328109fcd32.png",
     href: "/products",
     cta: "Select lenses and buy",
@@ -61,7 +60,7 @@ export const RARE_BEAUTY_FRAMES: EyeglassItem[] = [
     id: "millie-worth",
     name: "Millie",
     price: 95,
-    tag: "Warby Parker | Rare Beauty",
+    tag: "VÉLORA | Rare Beauty",
     image: "https://i.warbycdn.com/s/c/cbbbad2cba05ee223bae24b4382d2a028fd0c7b5.png",
     href: "/products",
     cta: "Select lenses and buy",
@@ -75,7 +74,7 @@ export const RARE_BEAUTY_FRAMES: EyeglassItem[] = [
     id: "elwell-encourage",
     name: "Elwell",
     price: 95,
-    tag: "Warby Parker | Rare Beauty",
+    tag: "VÉLORA | Rare Beauty",
     image: "https://i.warbycdn.com/s/c/2ef9afa3fff657c1b0cbb5d86fb30fe443e22cd8.png",
     href: "/products",
     cta: "Select lenses and buy",

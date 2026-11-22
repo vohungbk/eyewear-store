@@ -1,4 +1,3 @@
-// Sample catalog copied from the saved Warby Parker eyeglasses page (docs/warby-parker).
 // Used only as a demo fallback when the database has too few eyeglasses.
 
 export interface EyeglassSwatch {
@@ -62,7 +61,7 @@ export const SAMPLE_EYEGLASSES: EyeglassItem[] = [
     id: "sample-gillian",
     name: "Gillian",
     price: 95,
-    tag: "Warby Parker | Rare Beauty",
+    tag: "VÉLORA | Rare Beauty",
     image: "https://i.warbycdn.com/s/c/912b4d5ddcd1592fb398b51599c2c6ad05c66f13",
     href: "/products",
     cta: "Select lenses and buy",
@@ -76,7 +75,7 @@ export const SAMPLE_EYEGLASSES: EyeglassItem[] = [
     id: "sample-franny",
     name: "Franny",
     price: 95,
-    tag: "Warby Parker | Rare Beauty",
+    tag: "VÉLORA | Rare Beauty",
     image: "https://i.warbycdn.com/s/c/550880ddc224dcda5c70176ee793cf7e0bdc4cad",
     href: "/products",
     cta: "Select lenses and buy",

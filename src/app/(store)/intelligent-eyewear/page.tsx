@@ -51,6 +51,13 @@ export default function IntelligentEyewearPage() {
             Home
           </Link>
           <span aria-hidden>&rsaquo;</span>
+          <Link
+            href="/collections"
+            className="hover:text-[#121212] hover:underline"
+          >
+            Collections
+          </Link>
+          <span aria-hidden>&rsaquo;</span>
           <span className="font-medium text-[#121212]">
             Intelligent Eyewear
           </span>
