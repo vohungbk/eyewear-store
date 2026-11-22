@@ -5,7 +5,6 @@ import NewsletterForm from "@/components/layout/NewsletterForm";
 
 const FOOTER_LINKS = {
   Shop: [
-    { href: "/products", label: "All Eyewear" },
     { href: "/collections/sunglasses", label: "Sunglasses" },
     { href: "/eyeglasses", label: "Eyeglasses" },
     { href: "/collections/blue-light", label: "Blue Light" },

@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { href: "/eyeglasses", label: "Eyeglasses" },
   { href: "/collections/sunglasses", label: "Sunglasses" },
   { href: "/intelligent-eyewear", label: "Intelligent Eyewear" },
-  { href: "/products", label: "All Eyewear" },
+  { href: "/accessories", label: "Accessories" },
   { href: "/gift-cards", label: "Gift cards" },
 ];
 

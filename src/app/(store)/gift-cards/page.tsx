@@ -1,41 +1,47 @@
+/* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
-import GiftCardPurchaseForm from "@/components/ui/GiftCardPurchaseForm";
+import Link from "next/link";
+import GiftCardTypeSelector from "@/components/ui/GiftCardTypeSelector";
 
 export const metadata: Metadata = {
   title: "Gift Cards — VÉLORA",
-  description: "Give the gift of great vision. Send an VÉLORA gift card instantly by email.",
+  description:
+    "Our gift cards match the prices of our favorite products, so they’re easy to give and even easier to use.",
 };
 
 export default function GiftCardsPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-16">
-      {/* Header */}
-      <div className="mb-10 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3">
-          Perfect for any occasion
-        </p>
-        <h1 className="text-3xl font-bold mb-3">Gift Cards</h1>
-        <p className="text-neutral-500 text-sm leading-relaxed max-w-md mx-auto">
-          Give the gift of great vision. Gift cards are delivered instantly by email and
-          never expire. Redeemable on any order.
-        </p>
-      </div>
+    <div className="text-[#121212]">
+      {/* Hero */}
+      <section className="bg-white px-6 pb-16 pt-12 text-center md:pb-24 md:pt-20">
+        <div className="mx-auto max-w-[680px]">
+          <img
+            src="https://img.warbyparker.com/Gift%20Cards/gift-card-holiday-2024-hero.jpg"
+            alt="Gift card with its enclosing card and envelope"
+            className="mx-auto h-auto w-full max-w-[600px] object-contain"
+          />
+          <h1 className="mt-10 font-serif text-[32px] font-semibold leading-tight md:text-[44px] lg:text-[56px]">
+            Give a gift card!
+          </h1>
+          <p className="mt-6 text-base lg:text-lg">
+            Our gift cards match the prices of our favorite products, so they’re easy to give and even easier to
+            use—delivered via email or in a ready-to-gift envelope.
+          </p>
+          <div className="mt-6 flex flex-col items-center gap-6">
+            <a
+              href="#select-gift-card"
+              className="inline-flex h-12 w-full max-w-[232px] items-center justify-center rounded-full bg-[#2a4bd0] px-6 text-base font-semibold text-white transition-colors hover:bg-[#2340b8]"
+            >
+              Shop now
+            </a>
+            <Link href="/pages/faq" className="text-base font-semibold text-[#121212] hover:opacity-70">
+              Gift card FAQs
+            </Link>
+          </div>
+        </div>
+      </section>
 
-      {/* Visual gift card illustration */}
-      <div
-        className="rounded-2xl mb-10 p-8 text-white relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #111 0%, #333 100%)" }}
-      >
-        <p className="text-xs font-bold tracking-[0.2em] uppercase mb-6 opacity-60">VÉLORA</p>
-        <p className="text-3xl font-bold mb-1">Gift Card</p>
-        <p className="text-sm opacity-60 mb-8">Valid on any purchase · Never expires</p>
-        <p className="font-mono text-lg tracking-widest opacity-40">XXXX-XXXX-XXXX-XXXX</p>
-        {/* Decorative circles */}
-        <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-white opacity-5" />
-        <div className="absolute -right-4 -bottom-12 w-64 h-64 rounded-full bg-white opacity-5" />
-      </div>
-
-      <GiftCardPurchaseForm />
+      <GiftCardTypeSelector />
     </div>
   );
 }
