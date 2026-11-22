@@ -1,4 +1,3 @@
-// Frames and banners copied from the saved Warby Parker "Intelligent Eyewear"
 // collection page. Demo content only.
 
 import type { EyeglassItem } from "./eyeglassesSample";

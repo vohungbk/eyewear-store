@@ -9,7 +9,6 @@ interface DemoLocation {
   availability: string;
 }
 
-// Demo content copied from the saved Warby Parker booking page.
 const LOCATIONS: DemoLocation[] = [
   {
     id: "jordan-creek",

@@ -76,6 +76,13 @@ export default function RareBeautyPage() {
             Homepage
           </Link>
           <span aria-hidden>&rsaquo;</span>
+          <Link
+            href="/collections"
+            className="hover:text-[#121212] hover:underline"
+          >
+            Collections
+          </Link>
+          <span aria-hidden>&rsaquo;</span>
           <span className="font-medium text-[#121212]">Rare Beauty</span>
         </nav>
         <h1 className="mt-2 text-2xl font-medium leading-[34px] tracking-[0.48px] lg:text-[32px] lg:leading-10">
