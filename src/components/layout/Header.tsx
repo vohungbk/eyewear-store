@@ -9,7 +9,7 @@ import SearchAutocomplete from "@/components/layout/SearchAutocomplete";
 const NAV_LINKS = [
   { href: "/eyeglasses", label: "Eyeglasses" },
   { href: "/collections/sunglasses", label: "Sunglasses" },
-  { href: "/collections/sports", label: "Sports" },
+  { href: "/intelligent-eyewear", label: "Intelligent Eyewear" },
   { href: "/products", label: "All Eyewear" },
   { href: "/gift-cards", label: "Gift cards" },
 ];
