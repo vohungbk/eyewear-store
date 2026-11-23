@@ -139,7 +139,29 @@ describe("POST /api/orders/create-free", () => {
 
     await call(body);
 
-    expect(mock.rpcCalls).toEqual([{ fn: "deduct_order_stock", args: { p_order_id: "order-1" } }]);
+    expect(mock.rpcCalls[0]).toEqual({ fn: "deduct_order_stock", args: { p_order_id: "order-1" } });
+  });
+
+  it("should count the discount code use", async () => {
+    const mock = createDbMock({ ...giftCard(), "orders:insert": { data: { id: "order-1" } } });
+    m.db = mock.db;
+
+    await call(body);
+
+    expect(mock.rpcCalls).toContainEqual({ fn: "redeem_order_discount", args: { p_order_id: "order-1" } });
+  });
+
+  it("should not count the discount use when the item went out of stock", async () => {
+    const mock = createDbMock({
+      ...giftCard(),
+      "orders:insert": { data: { id: "order-1" } },
+      "rpc:deduct_order_stock": { error: { message: "insufficient_stock:v1" } },
+    });
+    m.db = mock.db;
+
+    await call(body);
+
+    expect(mock.rpcCalls.map((c) => c.fn)).not.toContain("redeem_order_discount");
   });
 
   it("should cancel the order and return 409 when the item just went out of stock", async () => {

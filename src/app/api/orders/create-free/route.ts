@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import type { Json } from "@/types/database";
 import { deductOrderStock } from "@/lib/stock";
+import { redeemOrderDiscount } from "@/lib/discountUsage";
 import { calculateOrder, PricingError } from "@/lib/pricing/calculateOrder";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,6 +115,8 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
+
+    await redeemOrderDiscount(db, order.id);
 
     // Deduct gift card balance
     const newBalance = parseFloat((giftCard.balance - totals.giftCardCredit).toFixed(2));
