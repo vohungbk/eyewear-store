@@ -55,8 +55,17 @@ export async function middleware(request: NextRequest) {
   return supabaseResponse;
 }
 
+// Only run on routes that need the Supabase session: auth redirects, and
+// Server Components that call getUser() (the session cookie must be refreshed
+// here because Server Components cannot write cookies). Public catalog pages
+// are excluded to avoid a Supabase Auth round trip on every request.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/admin/:path*",
+    "/account/:path*",
+    "/checkout/:path*",
+    "/login",
+    "/register",
+    "/products/:slug",
   ],
 };

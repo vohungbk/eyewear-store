@@ -327,6 +327,7 @@ export default async function FrameCatalogPage({
             return (
               <li key={m.value}>
                 <Link
+                  prefetch={false}
                   href={buildHref(basePath, {
                     ...base,
                     merch: active ? undefined : m.value,
@@ -398,6 +399,7 @@ export default async function FrameCatalogPage({
                 return (
                   <li key={opt.value}>
                     <Link
+                      prefetch={false}
                       href={buildHref(basePath, {
                         ...base,
                         [f.param]: toggle([...f.active], opt.value),
@@ -513,6 +515,7 @@ export default async function FrameCatalogPage({
         {chips.map((c) => (
           <Link
             key={c.key}
+            prefetch={false}
             href={c.href}
             className="flex h-9 items-center gap-2 rounded-full bg-[#f4f4f2] px-4 text-sm font-medium text-[#1050d0]"
           >
@@ -522,6 +525,7 @@ export default async function FrameCatalogPage({
           </Link>
         ))}
         <Link
+          prefetch={false}
           href={basePath}
           className="flex h-9 items-center rounded-full border border-[#e1e5e6] bg-white px-4 text-sm font-medium"
         >
@@ -583,6 +587,7 @@ export default async function FrameCatalogPage({
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <Link
                 key={p}
+                prefetch={false}
                 href={buildHref(basePath, {
                   ...base,
                   page: p > 1 ? String(p) : undefined,

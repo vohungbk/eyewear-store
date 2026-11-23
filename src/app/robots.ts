@@ -8,7 +8,15 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/api", "/account", "/checkout"],
+        // Block filtered/sorted/paginated catalog URLs (any query string) so
+        // crawlers do not hit every filter combination.
+        disallow: [
+          "/admin",
+          "/api",
+          "/account",
+          "/checkout",
+          "/*?*",
+        ],
       },
     ],
     sitemap: `${BASE}/sitemap.xml`,

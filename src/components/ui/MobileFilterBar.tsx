@@ -77,6 +77,7 @@ export default function MobileFilterBar({
             chips.map((c) => (
               <Link
                 key={c.key}
+                prefetch={false}
                 href={c.href}
                 className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#f4f4f2] px-4 text-sm font-medium tracking-[0.28px] text-[#1050d0]"
               >
@@ -86,7 +87,7 @@ export default function MobileFilterBar({
               </Link>
             ))}
           {chips.length > 0 && (
-            <Link href="/eyeglasses" className={pill}>
+            <Link href="/eyeglasses" prefetch={false} className={pill}>
               Reset
             </Link>
           )}
@@ -151,6 +152,7 @@ export default function MobileFilterBar({
             <div className="flex gap-3 border-t border-[#e1e5e6] p-4">
               <Link
                 href="/eyeglasses"
+                prefetch={false}
                 className="flex h-12 items-center justify-center rounded-full border border-[#e1e5e6] bg-white px-6 text-base font-medium tracking-[0.32px]"
               >
                 Reset
