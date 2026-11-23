@@ -215,8 +215,48 @@ describe("POST /api/webhooks/stripe", () => {
 
     await post();
 
-    expect(mock.rpcCalls).toEqual([{ fn: "deduct_order_stock", args: { p_order_id: "order-1" } }]);
+    expect(mock.rpcCalls[0]).toEqual({ fn: "deduct_order_stock", args: { p_order_id: "order-1" } });
     expect(mock.callsFor("orders", "update")[0].payload).toEqual({ status: "paid" });
+  });
+
+  it("should count the discount code use after marking the order paid", async () => {
+    const mock = createDbMock({ "orders:select": { data: order } });
+    m.db = mock.db;
+    event("payment_intent.succeeded", { order_id: "order-1" });
+
+    await post();
+
+    expect(mock.rpcCalls).toContainEqual({ fn: "redeem_order_discount", args: { p_order_id: "order-1" } });
+    expect(mock.callsFor("orders", "update")[0].payload).toEqual({ status: "paid" });
+  });
+
+  it("should still confirm the order when counting the discount use fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    m.db = createDbMock({
+      "orders:select": { data: order },
+      "rpc:redeem_order_discount": { error: { message: "boom" } },
+    }).db;
+    event("payment_intent.succeeded", { order_id: "order-1" });
+
+    const res = await post();
+
+    expect(res.status).toBe(200);
+    expect(m.sendOrderConfirmationEmail).toHaveBeenCalled();
+  });
+
+  it("should not count the discount use when the order was refunded for lack of stock", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    m.refund.mockResolvedValue({});
+    const mock = createDbMock({
+      "orders:select": { data: order },
+      "rpc:deduct_order_stock": { error: { message: "insufficient_stock:v1" } },
+    });
+    m.db = mock.db;
+    event("payment_intent.succeeded", { order_id: "order-1" });
+
+    await post();
+
+    expect(mock.rpcCalls.map((c) => c.fn)).not.toContain("redeem_order_discount");
   });
 
   it("should refund, cancel the order and skip the email when stock ran out", async () => {

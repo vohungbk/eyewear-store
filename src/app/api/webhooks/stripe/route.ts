@@ -6,6 +6,7 @@ import { sendCAPIEvent } from "@/lib/facebook/capi";
 import { sendOrderConfirmationEmail, sendGiftCardEmail } from "@/lib/email";
 import { markCartRecovered } from "@/lib/actions/abandonedCart";
 import { deductOrderStock } from "@/lib/stock";
+import { redeemOrderDiscount } from "@/lib/discountUsage";
 
 const OUT_OF_STOCK_NOTE = "Out of stock: payment refunded";
 
@@ -141,6 +142,8 @@ export async function POST(request: Request) {
           .update({ status: "paid" })
           .eq("id", orderId)
           .eq("stripe_payment_intent_id", pi.id);
+
+        await redeemOrderDiscount(db, orderId);
 
         // Fetch full order once — used for both CAPI and confirmation email
         const { data: order } = await db
