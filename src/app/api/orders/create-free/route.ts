@@ -3,7 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import type { Json } from "@/types/database";
-import type { CartItem } from "@/types/cart";
+import { calculateOrder, PricingError } from "@/lib/pricing/calculateOrder";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serviceClient(): any {
@@ -16,52 +16,49 @@ function serviceClient(): any {
 // Used when a gift card covers the full order total so no Stripe payment is needed.
 export async function POST(request: Request) {
   try {
+    // Amounts are never read from the client: only variant ids, quantities
+    // and promo codes are accepted; everything else is priced from the DB.
     const body = (await request.json()) as {
-      items: CartItem[];
+      items: { variantId: string; quantity: number }[];
       contact: { email: string; full_name: string; phone?: string };
       shippingAddress: {
         line1: string; line2?: string; city: string; state: string;
         postal_code: string; country: string;
       };
-      totals: {
-        subtotal: number; discount: number; shipping: number; tax: number;
-        giftCardCredit: number; total: number;
-      };
       discountCode?: string;
       giftCardCode: string;
     };
 
-    const { items, contact, shippingAddress, totals, discountCode, giftCardCode } = body;
+    const { items: requestedItems, contact, shippingAddress, giftCardCode } = body;
 
-    if (!items?.length) {
+    if (!requestedItems?.length) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
     }
     if (!giftCardCode) {
       return NextResponse.json({ error: "No gift card provided." }, { status: 400 });
     }
-    if (totals.total > 0) {
-      return NextResponse.json({ error: "Order is not fully covered by gift card." }, { status: 400 });
-    }
 
     const db = serviceClient();
-    const code = giftCardCode.trim().toUpperCase();
 
-    // Validate and lock the gift card with a balance check
-    const { data: gc } = await db
-      .from("gift_cards")
-      .select("id, balance, is_active, expires_at")
-      .eq("code", code)
-      .single();
+    let priced;
+    try {
+      priced = await calculateOrder(db, {
+        items: requestedItems,
+        discountCode: body.discountCode,
+        giftCardCode,
+      });
+    } catch (err) {
+      if (err instanceof PricingError) {
+        return NextResponse.json({ error: err.message }, { status: err.status });
+      }
+      throw err;
+    }
+    const { items, totals, discountCode, giftCard } = priced;
 
-    if (!gc || !gc.is_active) {
-      return NextResponse.json({ error: "Invalid or inactive gift card." }, { status: 400 });
+    if (!giftCard || totals.total > 0) {
+      return NextResponse.json({ error: "Order is not fully covered by gift card." }, { status: 400 });
     }
-    if (gc.expires_at && new Date(gc.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Gift card has expired." }, { status: 400 });
-    }
-    if (gc.balance < totals.giftCardCredit) {
-      return NextResponse.json({ error: "Insufficient gift card balance." }, { status: 400 });
-    }
+    const code = giftCard.code;
 
     const authClient = await createClient();
     const { data: { user } } = await authClient.auth.getUser();
@@ -74,7 +71,7 @@ export async function POST(request: Request) {
         status: "paid",
         subtotal: totals.subtotal,
         discount: totals.discount,
-        discount_code: discountCode ?? null,
+        discount_code: discountCode,
         shipping: totals.shipping,
         tax: totals.tax,
         total: 0,
@@ -97,20 +94,20 @@ export async function POST(request: Request) {
         product_id: item.productId,
         variant_id: item.variantId,
         quantity: item.quantity,
-        unit_price: item.price,
+        unit_price: item.unitPrice,
         product_snapshot: {
           name: item.name,
           variant_name: item.variantName,
-          image_url: item.imageUrl ?? null,
+          image_url: item.imageUrl,
         } as unknown as Json,
       }))
     );
 
     // Deduct gift card balance
-    const newBalance = parseFloat((gc.balance - totals.giftCardCredit).toFixed(2));
-    await db.from("gift_cards").update({ balance: newBalance }).eq("id", gc.id);
+    const newBalance = parseFloat((giftCard.balance - totals.giftCardCredit).toFixed(2));
+    await db.from("gift_cards").update({ balance: newBalance }).eq("id", giftCard.id);
     await db.from("gift_card_redemptions").insert({
-      gift_card_id: gc.id,
+      gift_card_id: giftCard.id,
       order_id: order.id,
       amount: totals.giftCardCredit,
     });
@@ -131,7 +128,7 @@ export async function POST(request: Request) {
         },
         order_items: items.map((i) => ({
           product_snapshot: { name: i.name, variant_name: i.variantName, image_url: i.imageUrl ?? undefined },
-          unit_price: i.price,
+          unit_price: i.unitPrice,
           quantity: i.quantity,
         })),
       }).catch(() => {});

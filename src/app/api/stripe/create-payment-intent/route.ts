@@ -3,7 +3,10 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import type { Json } from "@/types/database";
-import type { CartItem } from "@/types/cart";
+import { calculateOrder, PricingError } from "@/lib/pricing/calculateOrder";
+
+// Stripe rejects USD charges below $0.50.
+const MIN_STRIPE_AMOUNT = 0.5;
 
 // Untyped service client — avoids broken generic inference; runtime safety via RLS-bypass
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,8 +19,10 @@ function serviceClient(): any {
 
 export async function POST(request: Request) {
   try {
+    // Prices, discounts, shipping, tax and totals are never read from the
+    // client: it only sends variant ids, quantities and promo codes.
     const body = (await request.json()) as {
-      items: CartItem[];
+      items: { variantId: string; quantity: number }[];
       contact: { email: string; full_name: string; phone?: string };
       shippingAddress: {
         line1: string;
@@ -27,18 +32,43 @@ export async function POST(request: Request) {
         postal_code: string;
         country: string;
       };
-      totals: {
-        subtotal: number; discount: number; shipping: number; tax: number;
-        giftCardCredit?: number; total: number;
-      };
       discountCode?: string;
       giftCardCode?: string;
     };
 
-    const { items, contact, shippingAddress, totals, discountCode, giftCardCode } = body;
+    const { items: requestedItems, contact, shippingAddress } = body;
 
-    if (!items?.length) {
+    if (!requestedItems?.length) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
+    }
+
+    const db = serviceClient();
+    let priced;
+    try {
+      priced = await calculateOrder(db, {
+        items: requestedItems,
+        discountCode: body.discountCode,
+        giftCardCode: body.giftCardCode,
+      });
+    } catch (err) {
+      if (err instanceof PricingError) {
+        return NextResponse.json({ error: err.message }, { status: err.status });
+      }
+      throw err;
+    }
+    const { items, totals, discountCode, giftCard } = priced;
+
+    if (totals.total <= 0) {
+      return NextResponse.json(
+        { error: "Order is fully covered by gift card. Use the free order flow." },
+        { status: 400 }
+      );
+    }
+    if (totals.total < MIN_STRIPE_AMOUNT) {
+      return NextResponse.json(
+        { error: `The amount due must be at least $${MIN_STRIPE_AMOUNT.toFixed(2)}.` },
+        { status: 400 }
+      );
     }
 
     // Get current user to link order to account (may be null for guests)
@@ -59,20 +89,19 @@ export async function POST(request: Request) {
     });
 
     // Create pending order via service role (bypasses RLS)
-    const db = serviceClient();
     const { data: orderData, error: orderError } = await db
       .from("orders")
       .insert({
         user_id: user?.id ?? null,
         status: "pending",
         subtotal: totals.subtotal,
-        discount: totals.discount ?? 0,
-        discount_code: discountCode ?? null,
+        discount: totals.discount,
+        discount_code: discountCode,
         shipping: totals.shipping,
         tax: totals.tax,
         total: totals.total,
-        gift_card_code: giftCardCode ?? null,
-        gift_card_credit: totals.giftCardCredit ?? 0,
+        gift_card_code: giftCard?.code ?? null,
+        gift_card_credit: totals.giftCardCredit,
         stripe_payment_intent_id: paymentIntent.id,
         shipping_address: shippingAddress as unknown as Json,
         customer_email: contact.email,
@@ -92,11 +121,11 @@ export async function POST(request: Request) {
         product_id: item.productId,
         variant_id: item.variantId,
         quantity: item.quantity,
-        unit_price: item.price,
+        unit_price: item.unitPrice,
         product_snapshot: {
           name: item.name,
           variant_name: item.variantName,
-          image_url: item.imageUrl ?? null,
+          image_url: item.imageUrl,
         } as unknown as Json,
       }))
     );
