@@ -1,5 +1,6 @@
 "use client";
 
+import { computeTotalsCents, fromCents, toCents } from "@/lib/pricing/totals";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
@@ -43,16 +44,26 @@ export const elementsAppearance = {
   },
 };
 
+// Preview only: the server recomputes every amount from the database.
 export function calcTotals(items: CartItem[], discountAmount = 0, giftCardCredit = 0) {
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const discount = Math.min(discountAmount, subtotal);
-  const discounted = subtotal - discount;
-  const shipping = discounted >= 100 ? 0 : 9.99;
-  const tax = parseFloat((discounted * 0.08).toFixed(2));
-  const beforeGiftCard = parseFloat((discounted + shipping + tax).toFixed(2));
-  const giftCard = Math.min(giftCardCredit, beforeGiftCard);
-  const total = parseFloat(Math.max(0, beforeGiftCard - giftCard).toFixed(2));
-  return { subtotal, discount, shipping, tax, giftCard, total };
+  const t = computeTotalsCents({
+    subtotalCents: items.reduce((sum, i) => sum + toCents(i.price) * i.quantity, 0),
+    discountCents: toCents(discountAmount),
+    giftCardCents: toCents(giftCardCredit),
+  });
+  return {
+    subtotal: fromCents(t.subtotal),
+    discount: fromCents(t.discount),
+    shipping: fromCents(t.shipping),
+    tax: fromCents(t.tax),
+    giftCard: fromCents(t.giftCard),
+    total: fromCents(t.total),
+  };
+}
+
+// Only identifiers and quantities are sent; the server owns all pricing.
+export function toOrderItems(items: CartItem[]) {
+  return items.map((i) => ({ variantId: i.variantId, quantity: i.quantity }));
 }
 
 interface FormValues {
@@ -207,10 +218,9 @@ function ExpressCheckoutSection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items,
+          items: toOrderItems(items),
           contact,
           shippingAddress: shipping,
-          totals,
           discountCode: appliedCoupon?.code,
         }),
       });
@@ -612,10 +622,9 @@ export default function CheckoutForm({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items,
+            items: toOrderItems(items),
             contact,
             shippingAddress,
-            totals: { ...totals, giftCardCredit: giftCardCredit },
             discountCode: appliedCoupon?.code,
             giftCardCode: appliedGiftCard.code,
           }),
@@ -631,10 +640,9 @@ export default function CheckoutForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items,
+          items: toOrderItems(items),
           contact,
           shippingAddress,
-          totals: { ...totals, giftCardCredit: giftCardCredit },
           discountCode: appliedCoupon?.code,
           giftCardCode: appliedGiftCard?.code,
         }),

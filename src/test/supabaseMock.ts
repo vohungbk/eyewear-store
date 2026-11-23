@@ -19,7 +19,7 @@ export function createDbMock(results: Record<string, Result> = {}) {
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const builder: any = {};
-    for (const m of ["select", "eq", "lt", "lte", "is", "not", "order", "limit"]) {
+    for (const m of ["select", "eq", "in", "lt", "lte", "is", "not", "order", "limit"]) {
       builder[m] = vi.fn(() => builder);
     }
     builder.insert = vi.fn((payload: unknown) => {

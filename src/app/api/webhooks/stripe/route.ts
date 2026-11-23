@@ -88,6 +88,23 @@ export async function POST(request: Request) {
       const fbEventId = pi.metadata?.fb_event_id;
 
       if (orderId) {
+        // Never mark an order paid unless Stripe collected the amount the server priced.
+        const { data: expected } = await db
+          .from("orders")
+          .select("total")
+          .eq("id", orderId)
+          .eq("stripe_payment_intent_id", pi.id)
+          .single();
+        if (!expected || pi.amount_received !== Math.round(expected.total * 100)) {
+          console.error("[stripe-webhook] amount mismatch, order not marked paid", {
+            orderId,
+            paymentIntent: pi.id,
+            received: pi.amount_received,
+            expected: expected?.total,
+          });
+          break;
+        }
+
         await db
           .from("orders")
           .update({ status: "paid" })

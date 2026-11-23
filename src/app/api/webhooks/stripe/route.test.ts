@@ -56,10 +56,15 @@ const order = {
   ],
 };
 
-function event(type: string, metadata: Record<string, string>, id = "pi_1") {
+function event(
+  type: string,
+  metadata: Record<string, string>,
+  id = "pi_1",
+  amountReceived = 11300,
+) {
   m.constructEvent.mockReturnValue({
     type,
-    data: { object: { id, metadata } },
+    data: { object: { id, metadata, amount_received: amountReceived } },
   });
 }
 
@@ -182,6 +187,19 @@ describe("POST /api/webhooks/stripe", () => {
       }),
     );
     expect(m.markCartRecovered).toHaveBeenCalledWith("a@b.com");
+  });
+
+  it("should not mark the order as paid when the amount received differs from the order total", async () => {
+    const mock = createDbMock({ "orders:select": { data: order } });
+    m.db = mock.db;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    event("payment_intent.succeeded", { order_id: "order-1" }, "pi_1", 50);
+
+    const res = await post();
+
+    expect(res.status).toBe(200);
+    expect(mock.callsFor("orders", "update")).toHaveLength(0);
+    expect(m.sendOrderConfirmationEmail).not.toHaveBeenCalled();
   });
 
   it("should send a Facebook Purchase event with the deduplication id", async () => {

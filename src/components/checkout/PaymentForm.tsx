@@ -14,6 +14,7 @@ import {
   calcTotals,
   elementsAppearance,
   stripePromise,
+  toOrderItems,
 } from "@/components/checkout/CheckoutForm";
 
 type Totals = ReturnType<typeof calcTotals>;
@@ -34,13 +35,11 @@ interface Promo {
 function buildOrderPayload(
   items: CartItem[],
   shipping: ShippingInfo,
-  totals: Totals,
-  giftCardCredit: number,
   coupon: Promo | null,
   giftCard: Promo | null
 ) {
   return {
-    items,
+    items: toOrderItems(items),
     contact: {
       email: shipping.email,
       full_name: shipping.full_name,
@@ -54,7 +53,6 @@ function buildOrderPayload(
       postal_code: shipping.postal_code,
       country: shipping.country,
     },
-    totals: { ...totals, giftCardCredit },
     discountCode: coupon?.code,
     giftCardCode: giftCard?.code,
   };
@@ -265,7 +263,6 @@ function StripeSection({
   items,
   shipping,
   totals,
-  giftCardCredit,
   coupon,
   giftCard,
   promo,
@@ -273,7 +270,6 @@ function StripeSection({
   items: CartItem[];
   shipping: ShippingInfo;
   totals: Totals;
-  giftCardCredit: number;
   coupon: Promo | null;
   giftCard: Promo | null;
   promo: React.ReactNode;
@@ -306,7 +302,7 @@ function StripeSection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          buildOrderPayload(items, shipping, totals, giftCardCredit, coupon, giftCard)
+          buildOrderPayload(items, shipping, coupon, giftCard)
         ),
       });
       const data = await res.json();
@@ -373,16 +369,12 @@ function StripeSection({
 function FreeSection({
   items,
   shipping,
-  totals,
-  giftCardCredit,
   coupon,
   giftCard,
   promo,
 }: {
   items: CartItem[];
   shipping: ShippingInfo;
-  totals: Totals;
-  giftCardCredit: number;
   coupon: Promo | null;
   giftCard: Promo | null;
   promo: React.ReactNode;
@@ -399,7 +391,7 @@ function FreeSection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          buildOrderPayload(items, shipping, totals, giftCardCredit, coupon, giftCard)
+          buildOrderPayload(items, shipping, coupon, giftCard)
         ),
       });
       const data = await res.json();
@@ -505,8 +497,6 @@ export default function PaymentForm() {
   const shared = {
     items,
     shipping,
-    totals,
-    giftCardCredit,
     coupon,
     giftCard,
     promo,
@@ -526,7 +516,7 @@ export default function PaymentForm() {
         appearance: elementsAppearance,
       }}
     >
-      <StripeSection {...shared} />
+      <StripeSection {...shared} totals={totals} />
     </Elements>
   );
 }
