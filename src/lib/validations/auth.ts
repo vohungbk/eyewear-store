@@ -22,6 +22,16 @@ export const RegisterSchema = z.object({
   path: ["confirm_password"],
 });
 
+export const ResetPasswordSchema = z
+  .object({
+    password: RegisterSchema.shape.password,
+    confirm_password: z.string(),
+  })
+  .refine((d) => d.password === d.confirm_password, {
+    error: "Passwords do not match.",
+    path: ["confirm_password"],
+  });
+
 export const ForgotPasswordSchema = z.object({
   email: z.email({ error: "Please enter a valid email address." }).trim(),
 });
