@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import type { Json } from "@/types/database";
+import { deductOrderStock } from "@/lib/stock";
 import { calculateOrder, PricingError } from "@/lib/pricing/calculateOrder";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,6 +103,17 @@ export async function POST(request: Request) {
         } as unknown as Json,
       }))
     );
+
+    // Deduct stock atomically; if someone else took the last unit, cancel the order.
+    const stock = await deductOrderStock(db, order.id);
+    if (!stock.ok) {
+      await db.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+      if (stock.reason === "error") throw new Error("Stock deduction failed");
+      return NextResponse.json(
+        { error: "An item in your cart just went out of stock." },
+        { status: 409 }
+      );
+    }
 
     // Deduct gift card balance
     const newBalance = parseFloat((giftCard.balance - totals.giftCardCredit).toFixed(2));

@@ -38,8 +38,17 @@ export function createDbMock(results: Record<string, Result> = {}) {
     return builder;
   });
 
+  // rpc results are keyed by "rpc:<function name>"
+  const rpcCalls: { fn: string; args: unknown }[] = [];
+  const rpc = vi.fn((fn: string, args: unknown) => {
+    rpcCalls.push({ fn, args });
+    const r = results[`rpc:${fn}`] ?? {};
+    return Promise.resolve({ data: r.data ?? null, error: r.error ?? null });
+  });
+
   return {
-    db: { from },
+    db: { from, rpc },
+    rpcCalls,
     calls,
     callsFor: (table: string, op: DbCall["op"]) =>
       calls.filter((c) => c.table === table && c.op === op),

@@ -10,6 +10,7 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => m.db }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }),
 }));
+vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
 vi.mock("@/lib/email", () => ({ sendOrderConfirmationEmail: m.sendOrderConfirmationEmail }));
 
 import { POST } from "./route";
@@ -130,6 +131,32 @@ describe("POST /api/orders/create-free", () => {
       order_id: "order-1",
       amount: 53.19,
     });
+  });
+
+  it("should deduct stock for the order", async () => {
+    const mock = createDbMock({ ...giftCard(), "orders:insert": { data: { id: "order-1" } } });
+    m.db = mock.db;
+
+    await call(body);
+
+    expect(mock.rpcCalls).toEqual([{ fn: "deduct_order_stock", args: { p_order_id: "order-1" } }]);
+  });
+
+  it("should cancel the order and return 409 when the item just went out of stock", async () => {
+    const mock = createDbMock({
+      ...giftCard(),
+      "orders:insert": { data: { id: "order-1" } },
+      "rpc:deduct_order_stock": { error: { message: "insufficient_stock:v1" } },
+    });
+    m.db = mock.db;
+
+    const res = await call(body);
+
+    expect(res.status).toBe(409);
+    expect(mock.callsFor("orders", "update")[0].payload).toEqual({ status: "cancelled" });
+    expect(mock.callsFor("gift_cards", "update")).toHaveLength(0);
+    expect(mock.callsFor("gift_card_redemptions", "insert")).toHaveLength(0);
+    expect(m.sendOrderConfirmationEmail).not.toHaveBeenCalled();
   });
 
   it("should still succeed when the confirmation email fails", async () => {

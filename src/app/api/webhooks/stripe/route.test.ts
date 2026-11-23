@@ -9,14 +9,20 @@ const m = vi.hoisted(() => ({
   sendOrderConfirmationEmail: vi.fn(),
   sendGiftCardEmail: vi.fn(),
   markCartRecovered: vi.fn(),
+  refund: vi.fn(),
 }));
+
+vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
 
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => m.db }));
 vi.mock("next/headers", () => ({
   headers: async () => ({ get: () => m.signature }),
 }));
 vi.mock("@/lib/stripe", () => ({
-  getStripe: () => ({ webhooks: { constructEvent: m.constructEvent } }),
+  getStripe: () => ({
+    webhooks: { constructEvent: m.constructEvent },
+    refunds: { create: m.refund },
+  }),
 }));
 vi.mock("@/lib/facebook/capi", () => ({ sendCAPIEvent: m.sendCAPIEvent }));
 vi.mock("@/lib/email", () => ({
@@ -198,6 +204,70 @@ describe("POST /api/webhooks/stripe", () => {
     const res = await post();
 
     expect(res.status).toBe(200);
+    expect(mock.callsFor("orders", "update")).toHaveLength(0);
+    expect(m.sendOrderConfirmationEmail).not.toHaveBeenCalled();
+  });
+
+  it("should deduct stock for the order before marking it paid", async () => {
+    const mock = createDbMock({ "orders:select": { data: order }, "rpc:deduct_order_stock": { data: "deducted" } });
+    m.db = mock.db;
+    event("payment_intent.succeeded", { order_id: "order-1" });
+
+    await post();
+
+    expect(mock.rpcCalls).toEqual([{ fn: "deduct_order_stock", args: { p_order_id: "order-1" } }]);
+    expect(mock.callsFor("orders", "update")[0].payload).toEqual({ status: "paid" });
+  });
+
+  it("should refund, cancel the order and skip the email when stock ran out", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    m.refund.mockResolvedValue({});
+    const mock = createDbMock({
+      "orders:select": { data: order },
+      "rpc:deduct_order_stock": { error: { message: "insufficient_stock:v1" } },
+    });
+    m.db = mock.db;
+    event("payment_intent.succeeded", { order_id: "order-1" });
+
+    const res = await post();
+
+    expect(res.status).toBe(200);
+    expect(m.refund).toHaveBeenCalledWith(
+      { payment_intent: "pi_1" },
+      { idempotencyKey: "oos-refund-order-1" },
+    );
+    expect(mock.callsFor("orders", "update")).toEqual([
+      expect.objectContaining({ payload: expect.objectContaining({ status: "cancelled" }) }),
+    ]);
+    expect(m.sendOrderConfirmationEmail).not.toHaveBeenCalled();
+    expect(m.markCartRecovered).not.toHaveBeenCalled();
+  });
+
+  it("should return 500 so Stripe retries when stock deduction fails unexpectedly", async () => {
+    const mock = createDbMock({
+      "orders:select": { data: order },
+      "rpc:deduct_order_stock": { error: { message: "connection lost" } },
+    });
+    m.db = mock.db;
+    event("payment_intent.succeeded", { order_id: "order-1" });
+
+    const res = await post();
+
+    expect(res.status).toBe(500);
+    expect(mock.callsFor("orders", "update")).toHaveLength(0);
+    expect(m.refund).not.toHaveBeenCalled();
+  });
+
+  it("should not revive an order that was already cancelled for lack of stock", async () => {
+    const mock = createDbMock({
+      "orders:select": { data: { ...order, notes: "Out of stock: payment refunded" } },
+    });
+    m.db = mock.db;
+    event("payment_intent.succeeded", { order_id: "order-1" });
+
+    await post();
+
+    expect(mock.rpcCalls).toHaveLength(0);
     expect(mock.callsFor("orders", "update")).toHaveLength(0);
     expect(m.sendOrderConfirmationEmail).not.toHaveBeenCalled();
   });
