@@ -5,6 +5,9 @@ import { getStripe } from "@/lib/stripe";
 import { sendCAPIEvent } from "@/lib/facebook/capi";
 import { sendOrderConfirmationEmail, sendGiftCardEmail } from "@/lib/email";
 import { markCartRecovered } from "@/lib/actions/abandonedCart";
+import { deductOrderStock } from "@/lib/stock";
+
+const OUT_OF_STOCK_NOTE = "Out of stock: payment refunded";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serviceClient(): any {
@@ -91,7 +94,7 @@ export async function POST(request: Request) {
         // Never mark an order paid unless Stripe collected the amount the server priced.
         const { data: expected } = await db
           .from("orders")
-          .select("total")
+          .select("total, notes")
           .eq("id", orderId)
           .eq("stripe_payment_intent_id", pi.id)
           .single();
@@ -102,6 +105,34 @@ export async function POST(request: Request) {
             received: pi.amount_received,
             expected: expected?.total,
           });
+          break;
+        }
+
+        // Already cancelled and refunded for lack of stock: never revive it.
+        if (expected.notes === OUT_OF_STOCK_NOTE) break;
+
+        // Deduct stock atomically before confirming the order. If another
+        // buyer took the last unit, refund this payment and cancel the order.
+        const stock = await deductOrderStock(db, orderId);
+        if (!stock.ok && stock.reason === "error") {
+          // Let Stripe retry the webhook.
+          return new Response("Stock deduction failed", { status: 500 });
+        }
+        if (!stock.ok) {
+          console.error("[stripe-webhook] out of stock, refunding", { orderId, paymentIntent: pi.id });
+          await db
+            .from("orders")
+            .update({ status: "cancelled", notes: OUT_OF_STOCK_NOTE })
+            .eq("id", orderId)
+            .eq("stripe_payment_intent_id", pi.id);
+          try {
+            await getStripe().refunds.create(
+              { payment_intent: pi.id },
+              { idempotencyKey: `oos-refund-${orderId}` },
+            );
+          } catch (err) {
+            console.error("[stripe-webhook] refund failed, refund manually", { orderId, err });
+          }
           break;
         }
 
