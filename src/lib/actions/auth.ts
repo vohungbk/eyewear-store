@@ -7,6 +7,7 @@ import {
   LoginSchema,
   RegisterSchema,
   ForgotPasswordSchema,
+  ResetPasswordSchema,
   UpdateProfileSchema,
   type FormState,
 } from "@/lib/validations/auth";
@@ -114,6 +115,42 @@ export async function forgotPassword(
     success: true,
     message: "Password reset email sent. Check your inbox.",
   };
+}
+
+// Final step of the reset flow: /auth/callback has already exchanged the
+// emailed code for a session, so the user is signed in at this point.
+export async function resetPassword(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const raw = {
+    password: formData.get("password") as string,
+    confirm_password: formData.get("confirm_password") as string,
+  };
+
+  const parsed = ResetPasswordSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      success: false,
+      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      success: false,
+      message: "This reset link is invalid or has expired. Please request a new one.",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) {
+    return { success: false, message: error.message || "Could not update password. Please try again." };
+  }
+
+  redirect("/account");
 }
 
 export async function signInWithGoogle(formData: FormData): Promise<void> {
